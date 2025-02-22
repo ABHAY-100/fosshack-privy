@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, use } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,8 +9,8 @@ import { ArrowLeft, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { use } from "react";
 import { io, Socket } from "socket.io-client";
+import { toast } from "sonner";
 
 type Message = {
   id: number;
@@ -19,62 +19,90 @@ type Message = {
   timestamp: string;
 };
 
-// ChatClient Component
 function ChatClient({ roomId }: { roomId: string }) {
-  /** WebSocket connection to chat server */
   const [socket, setSocket] = useState<Socket | null>(null);
-
   const router = useRouter();
   const [message, setMessage] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const myUserId = sessionStorage.getItem("keyedin_publickey") || "";
+  const timeoutRef = useRef<number | null>(null);
 
+  // Inactivity timeout setup
+  useEffect(() => {
+    const handleActivity = () => {
+      if (timeoutRef.current) {
+        window.clearTimeout(timeoutRef.current);
+      }
+      
+      timeoutRef.current = window.setTimeout(() => {
+        
+        sessionStorage.clear();
+        
+
+        router.push('/');
+        toast.error("Inactivity timeout. Redirecting to home page...", {
+          duration: Infinity, // Keep the toast visible indefinitely
+          action: {
+            label: 'Close',
+            onClick: () => {
+              // Dismiss the toast when the close button is clicked
+              toast.dismiss();
+            }
+          }
+        });
+      }, 900000); // 15 minutes for timeout
+    };
+
+    const events = ['mousemove', 'keydown', 'click'];
+    events.forEach(event => {
+      window.addEventListener(event, handleActivity);
+    });
+
+    handleActivity(); // Initialize timeout on mount
+
+    return () => {
+      events.forEach(event => {
+        window.removeEventListener(event, handleActivity);
+      });
+      if (timeoutRef.current) {
+        window.clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [router]);
+
+  // WebSocket connection
   useEffect(() => {
     const socket: Socket = io("https://bmh7d6sg-5000.inc1.devtunnels.ms/");
     setSocket(socket);
-    // Register on connect with roomId
 
     socket.emit("register", { userId: myUserId, roomId });
 
-    // Handle incoming messages from the room
     socket.on(
       "room message",
       (data: { from: string; message: string; sender: string }) => {
-        console.log(
-          "message received:",
-          socket.id,
-          data.sender,
-          data.sender === socket.id
-        );
         if (data.sender != socket.id) {
           setMessages((prev) => [
             ...prev,
             {
               id: Date.now(),
               text: data.message,
-              sender: data.from === myUserId ? "user" : "other", // Determine sender
+              sender: data.from === myUserId ? "user" : "other",
               timestamp: new Date().toISOString(),
             },
           ]);
         }
-        console.log(`Received from ${data.from}: ${data.message}`);
       }
     );
 
     return () => {
-      socket.off("room message"); // Cleanup socket listener
+      socket.off("room message");
     };
-  }, [roomId]);
+  }, [roomId, myUserId]);
 
   const handleSend = () => {
-    console.log("message sent");
     if (message.trim()) {
-      // Emit the message to the room
-      console.log("emited from ", socket?.id);
       socket?.emit("room message", { roomId, message, sender: socket.id });
-
-      // Add the message to the local state
       setMessages((prev) => [
         ...prev,
         {
@@ -84,14 +112,10 @@ function ChatClient({ roomId }: { roomId: string }) {
           timestamp: new Date().toISOString(),
         },
       ]);
-
-      // Clear the input
-      console.log(messages);
       setMessage("");
     }
   };
 
-  /** Auto-scroll chat to bottom when new messages arrive */
   useEffect(() => {
     if (scrollRef.current) {
       document.getElementById("scrollDiv")?.scrollIntoView({ behavior: "smooth" });
@@ -119,11 +143,9 @@ function ChatClient({ roomId }: { roomId: string }) {
             <CardTitle className="text-center flex items-center justify-center gap-2">
               <div className="flex -space-x-2">
                 <Avatar className="border-2 border-background">
-                  <AvatarImage src="" />
                   <AvatarFallback>U1</AvatarFallback>
                 </Avatar>
                 <Avatar className="border-2 border-background">
-                  <AvatarImage src="" />
                   <AvatarFallback>U2</AvatarFallback>
                 </Avatar>
               </div>
@@ -131,7 +153,7 @@ function ChatClient({ roomId }: { roomId: string }) {
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col h-[calc(80vh-140px)]">
-            <ScrollArea className="flex-1 pr-4" >
+            <ScrollArea className="flex-1 pr-4">
               <AnimatePresence initial={false}>
                 <div className="space-y-4 py-4">
                   {messages.map((msg) => (
@@ -174,7 +196,7 @@ function ChatClient({ roomId }: { roomId: string }) {
                   ))}
                 </div>
               </AnimatePresence>
-            <div id="scrollDiv" ref={scrollRef}></div>
+              <div id="scrollDiv" ref={scrollRef}></div>
             </ScrollArea>
 
             <div className="border-t pt-4 mt-auto">
@@ -203,10 +225,6 @@ function ChatClient({ roomId }: { roomId: string }) {
   );
 }
 
-/**
- * Main chat page component that unwraps the roomId from URL params
- * and renders the ChatClient
- */
 export default function ChatPage({
   params,
 }: {
