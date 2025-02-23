@@ -64,16 +64,20 @@ npm install
 cd ../server
 npm install
 ```
-
 ### Running Privy ▶️
 
 1. Start the Server
 ```bash
 cd server
-npm start
+nodemon server
 ```
 
-2. Launch the Client
+2. Create a `.env` file in the client directory
+```bash
+NEXT_PUBLIC_BACKEND_URL=http://localhost:5000  # or your hosted server URL
+```
+
+3. Launch the Client
 ```bash
 cd client
 npm run dev
