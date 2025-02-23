@@ -6,7 +6,10 @@ Privy is a privacy-focused messaging platform that ensures your conversations re
 
 ![Privy](https://i.postimg.cc/28D1TDWZ/Untitled.jpg)
 
-<video src="demovideo.mp4" controls></video>
+## Demo 🎥
+
+[![Watch the Demo](https://img.youtube.com/vi/i1RtI7xv5tI/maxresdefault.jpg)](https://www.youtube.com/watch?v=i1RtI7xv5tI?autoplay=1)
+
 
 ## Why Privy? 🤔
 
