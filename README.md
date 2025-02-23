@@ -6,6 +6,11 @@ Privy is a privacy-focused messaging platform that ensures your conversations re
 
 ![Privy](https://i.postimg.cc/28D1TDWZ/Untitled.jpg)
 
+## Demo 🎥
+
+[![Watch the Demo](https://img.youtube.com/vi/i1RtI7xv5tI/maxresdefault.jpg)](https://www.youtube.com/watch?v=i1RtI7xv5tI?autoplay=1)
+
+
 ## Why Privy? 🤔
 
 In today's digital age, privacy isn't just a feature – it's a necessity. Traditional messaging platforms store your data, creating potential security vulnerabilities. Privy solves this by implementing true ephemeral messaging where nothing is ever written to disk. 🛡️
@@ -112,9 +117,9 @@ Open to legitimate contributions. Fork and submit a PR!
 ## Team Members
 
 1. [Abhay Balakrishnan](https://github.com/ABHAY-100)
-2. [Elvin J Alapatt](https://github.com/Elvin2605)
-3. [Sreyas B Anand](https://github.com/sreyas-b-anand)
-4. [Asil Mehaboob](https://github.com/AsilMehaboob)
+2. [Asil Mehaboob](https://github.com/AsilMehaboob)
+3. [Elvin J Alapatt](https://github.com/Elvin2605)
+4. [Sreyas B Anand](https://github.com/sreyas-b-anand)
 
 ## License ⚖️
 
