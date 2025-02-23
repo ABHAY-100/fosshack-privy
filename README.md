@@ -108,6 +108,14 @@ Visit `http://localhost:3000` to start using Privy.
 
 Open to legitimate contributions. Fork and submit a PR!
 
+
+## Team Members
+
+1. [Abhay Balakrishnan](https://github.com/ABHAY-100)
+2. [Elvin J Alapatt](https://github.com/Elvin2605)
+3. [Sreyas B Anand](https://github.com/sreyas-b-anand)
+4. [Asil Mehaboob](https://github.com/AsilMehaboob)
+
 ## License ⚖️
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
