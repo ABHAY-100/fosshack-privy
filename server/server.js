@@ -72,7 +72,7 @@ if (roomMembers.size > 1) {
       peerKey: publicKey,
       socketId: socket.id
     });
-  }g
+  }
         } catch (error) {
             console.error("Registration error:", error.message);
             socket.emit("error", { 
