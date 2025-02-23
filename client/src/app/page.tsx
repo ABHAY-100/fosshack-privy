@@ -34,7 +34,7 @@ export default function HomePage() {
         <Card className="border-2 pt-[12px]">
           <CardHeader>
             <CardTitle className="text-center text-3xl font-semibold">
-              Welcome to KeyedIn
+              Welcome to Privy
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 p-6">
