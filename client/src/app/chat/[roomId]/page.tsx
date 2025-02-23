@@ -53,7 +53,7 @@ function ChatClient({ roomId }: { roomId: string }) {
       return;
     }
 
-    const socketInstance = io(process.env.NEXT_PUBLIC_BACKEND_URL, { 
+    const socketInstance = io("https://bmh7d6sg-5000.inc1.devtunnels.ms/", { 
       auth: {
         publicKey: storedKey,
         roomId: roomId
@@ -77,6 +77,11 @@ function ChatClient({ roomId }: { roomId: string }) {
       setConnectionStatus("Connected");
 
     });
+
+    socketInstance.on("room_full" , ()=>{
+      router.push('/')
+      toast.error("Room is full")
+    })
 
     socketInstance.on("disconnect", (reason) => {
       setConnectionStatus(`Disconnected: ${reason}`);

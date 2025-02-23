@@ -48,6 +48,15 @@ try {
                 if (users.has(socket.id)) {
                     handleDisconnect(socket.id);
                 }
+                const room = io.sockets.adapter.rooms.get(roomId);
+                const roomSize = room ? room.size : 0;
+
+                if (roomSize >= 2) {
+            // Send error to client (will trigger Sonner toast)
+            socket.emit("room_full");
+            return;
+        }
+
     
                 users.set(socket.id, { publicKey, roomId });
                 socket.join(roomId);

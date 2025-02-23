@@ -33,7 +33,7 @@ export default function CreateRoomPage() {
       try {
         await navigator.share({
           title: "Join my chat room",
-          text: `Join my chat room with code: ${roomCode}`,
+          text: `Join my chat room with code: ${roomCode} https://privy-client.vercel.app/join-room`,
         });
       } catch (err) {
         toast.error(`Couldn't share room code : ${err}`);
