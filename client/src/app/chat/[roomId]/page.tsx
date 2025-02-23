@@ -53,7 +53,7 @@ function ChatClient({ roomId }: { roomId: string }) {
       return;
     }
 
-    const socketInstance = io("https://bmh7d6sg-5000.inc1.devtunnels.ms/", { 
+    const socketInstance = io(process.env.NEXT_PUBLIC_BACKEND_URL, { 
       auth: {
         publicKey: storedKey,
         roomId: roomId
