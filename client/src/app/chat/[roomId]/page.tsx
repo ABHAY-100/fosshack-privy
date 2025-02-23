@@ -15,7 +15,7 @@ import { encryptMessage, decryptMessage, getKeysFromStorage } from '@/lib/crypto
 type Message = {
   id: string;
   text: string;
-  encryptedText?: string; // Add this field
+  encryptedText?: string;
   sender: "user" | "other";
   timestamp: number;
 };
@@ -25,7 +25,9 @@ function ChatClient({ roomId }: { roomId: string }) {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
-  const [peerPublicKey, setPeerPublicKey] = useState("");
+  const [peerPublicKey, setPeerPublicKey] = useState(
+    sessionStorage.getItem(`peerKey-${roomId}`) || ""
+  );
   const [connectionStatus, setConnectionStatus] = useState("Connecting...");
   const [publicKey, setPublicKey] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -33,7 +35,7 @@ function ChatClient({ roomId }: { roomId: string }) {
   useEffect(() => {
     const storedKey = sessionStorage.getItem("keyedin_publickey");
     if (!storedKey?.trim()) {
-      router.push("/login");
+      router.push("/");
       return;
     }
     setPublicKey(storedKey);
@@ -70,6 +72,7 @@ function ChatClient({ roomId }: { roomId: string }) {
 
     socketInstance.on("disconnect", (reason) => {
       setConnectionStatus(`Disconnected: ${reason}`);
+      sessionStorage.removeItem(`peerKey-${roomId}`);
       if (reason === "io server disconnect") {
         router.push("/");
       }
@@ -87,13 +90,11 @@ function ChatClient({ roomId }: { roomId: string }) {
       timestamp: number
     }) => {
       try {
-        console.log("Received encrypted message:", data.message);
         const myKeys = await getKeysFromStorage();
         if (!myKeys) throw new Error("No keys found");
 
         const decryptedMessage = await decryptMessage(data.message, myKeys.privateKey);
-        console.log("Decrypted message:", decryptedMessage);
-
+        
         setMessages(prev => [...prev, {
           id: data.id,
           text: decryptedMessage,
@@ -106,12 +107,24 @@ function ChatClient({ roomId }: { roomId: string }) {
       }
     });
 
+    // Inside the useEffect where socket events are set up
+socketInstance.on("peers list", ({ peers }: { peers: string[] }) => {
+  if (peers.length > 0) {
+    const existingPeerKey = peers[0]; // Assuming 1:1 chat
+    sessionStorage.setItem(`peerKey-${roomId}`, existingPeerKey);
+    setPeerPublicKey(existingPeerKey);
+    console.log("Received existing peers:", peers);
+  }
+});
+
     socketInstance.on("peer connected", ({ peerKey }) => {
+      sessionStorage.setItem(`peerKey-${roomId}`, peerKey);
       setPeerPublicKey(peerKey);
       console.log("Peer connected:", peerKey);
     });
 
     socketInstance.on("peer disconnected", () => {
+      sessionStorage.removeItem(`peerKey-${roomId}`);
       setPeerPublicKey("");
       console.log("Peer disconnected");
     });
@@ -119,7 +132,7 @@ function ChatClient({ roomId }: { roomId: string }) {
     socketInstance.on("error", (error) => {
       console.error("Socket error:", error);
       if (error.code === "INVALID_REGISTRATION") {
-        router.push("/login");
+        router.push("/");
       }
     });
 
@@ -132,41 +145,26 @@ function ChatClient({ roomId }: { roomId: string }) {
     setSocket(socketInstance);
 
     return () => {
+      sessionStorage.removeItem(`peerKey-${roomId}`);
       socketInstance.off("connect", handleRegister);
       socketInstance.disconnect();
     };
   }, [roomId, router]);
 
   const handleSend = async () => {
-    if (!message.trim() || !socket || !peerPublicKey) {
-      console.log("Send conditions not met:", { 
-        hasMessage: !!message.trim(), 
-        hasSocket: !!socket, 
-        hasPeerKey: !!peerPublicKey 
-      });
-      return;
-    }
+    if (!message.trim() || !socket || !peerPublicKey) return;
 
     try {
-      console.log("Original message:", message);
-      console.log("Peer public key:", peerPublicKey);
-
       const peerKeyData = Uint8Array.from(atob(peerPublicKey), c => c.charCodeAt(0));
       const peerKey = await window.crypto.subtle.importKey(
         'spki',
         peerKeyData,
-        {
-          name: 'RSA-OAEP',
-          hash: 'SHA-256'
-        },
+        { name: 'RSA-OAEP', hash: 'SHA-256' },
         true,
         ['encrypt']
       );
 
-      console.log("Imported peer public key successfully");
       const encryptedMessage = await encryptMessage(message, peerKey);
-      console.log("Encrypted message:", encryptedMessage);
-
       const tempId = `${socket.id}-${Date.now()}`;
       
       setMessages(prev => [...prev, {
@@ -180,7 +178,6 @@ function ChatClient({ roomId }: { roomId: string }) {
       socket.emit("room message", 
         { message: encryptedMessage },
         (ack: { status: string; messageId: string }) => {
-          console.log("Message delivery status:", ack.status);
           if (ack.status === "delivered") {
             setMessages(prev => prev.map(msg => 
               msg.id === tempId ? { ...msg, id: ack.messageId } : msg
@@ -268,7 +265,7 @@ function ChatClient({ roomId }: { roomId: string }) {
                             ? "bg-blue-500 text-white"
                             : "bg-gray-100 text-black"
                         }`}>
-                          <p className="font-semibold">Original: {msg.text}</p>
+                          <p className="font-semibold">{msg.text}</p>
                           {msg.encryptedText && (
                             <p className="text-xs mt-1 font-mono break-all opacity-50">
                               Encrypted: {msg.encryptedText.substring(0, 50)}...

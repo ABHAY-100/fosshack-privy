@@ -58,17 +58,21 @@ io.on("connection", (socket) => {
             console.log(`Registered: ${publicKey} in ${roomId}`);
 
             const roomMembers = rooms.get(roomId);
-            if (roomMembers.size > 1) {
-                const otherMembers = Array.from(roomMembers)
-                    .filter(id => id !== socket.id)
-                    .map(id => users.get(id).publicKey);
-
-                socket.emit("peers list", { peers: otherMembers });
-                socket.to(roomId).emit("peer connected", {
-                    peerKey: publicKey,
-                    socketId: socket.id
-                });
-            }
+            // Inside the 'register' event handler
+if (roomMembers.size > 1) {
+    const otherMembers = Array.from(roomMembers)
+      .filter(id => id !== socket.id)
+      .map(id => users.get(id).publicKey);
+  
+    // Send existing peers to the new user
+    socket.emit("peers list", { peers: otherMembers });
+    
+    // Notify existing users about the new peer
+    socket.to(roomId).emit("peer connected", {
+      peerKey: publicKey,
+      socketId: socket.id
+    });
+  }g
         } catch (error) {
             console.error("Registration error:", error.message);
             socket.emit("error", { 
