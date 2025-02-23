@@ -7,7 +7,7 @@ import { Toaster } from "sonner";
  * @see https://nextjs.org/docs/app/api-reference/functions/generate-metadata
  */
 export const metadata: Metadata = {
-  title: "KeyedIn",
+  title: "Privy",
   description: "Secure end-to-end encrypted chat application",
 };
 
