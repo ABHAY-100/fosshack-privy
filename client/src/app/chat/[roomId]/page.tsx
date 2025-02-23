@@ -10,6 +10,10 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { io, Socket } from "socket.io-client";
+import Image from 'next/image';
+import User1 from "../../../../public/user_1.jpg";
+import User2 from "../../../../public/user_2.jpg";
+
 import { encryptMessage, decryptMessage, getKeysFromStorage } from '@/lib/cryptoUtils';
 import { toast } from "sonner";
 
@@ -206,46 +210,42 @@ socketInstance.on("peers list", ({ peers }: { peers: string[] }) => {
   }, [messages]);
 
   return (
-    <div className="h-screen flex items-center justify-center bg-gray-100">
+    <div className="h-screen flex items-center justify-center bg-black w-full">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-4xl p-4"
+        className="w-full h-full"
       >
-        <Card className="shadow-lg">
-          <CardHeader className="border-b">
-            <div className="flex items-center justify-between">
+        <Card className="shadow-lg w-full h-full flex flex-col rounded-none">
+          <CardHeader>
+            <div className="flex items-center justify-between rounded-none">
               <Button
                 variant="ghost"
                 onClick={() => router.push("/")}
-                className="gap-2"
+                className="gap-2 bg-white/5"
               >
                 <ArrowLeft className="h-4 w-4" />
                 Back
               </Button>
+              <p className="hidden font-bold tracking-wider sm:flex items-center ">Room : {roomId}</p>
               <div className="flex items-center gap-4">
                 <div className="flex -space-x-2">
-                  <Avatar className="border-2 border-white">
-                    <AvatarFallback>
-                      {publicKey.slice(0, 2).toUpperCase()}
-                    </AvatarFallback>
+                  <Avatar className="border-[1px] border-white">
+                    <Image src={User1} alt="User 1" className="w-full h-full object-cover rounded-full" />
                   </Avatar>
+
                   {peerPublicKey && (
-                    <Avatar className="border-2 border-white">
-                      <AvatarFallback>
-                        {peerPublicKey.slice(0, 2).toUpperCase()}
-                      </AvatarFallback>
+                    <Avatar className="border-[1px] border-white">
+                      <Image src={User2} alt="User 2" className="w-full h-full object-cover rounded-full" />
                     </Avatar>
                   )}
                 </div>
-                <div className="text-sm text-gray-500">
-                  {connectionStatus}
-                </div>
+                <div className="text-sm text-gray-500">Status: {connectionStatus}</div>
               </div>
             </div>
           </CardHeader>
 
-          <CardContent className="p-4 h-[70vh] flex flex-col">
+          <CardContent className="p-4 h-screen flex flex-col">
             <ScrollArea className="flex-1 pr-4 mb-4">
               <AnimatePresence initial={false}>
                 <div className="space-y-4">
@@ -259,35 +259,42 @@ socketInstance.on("peers list", ({ peers }: { peers: string[] }) => {
                         msg.sender === "user" ? "justify-end" : "justify-start"
                       }`}
                     >
-                      <div className={`max-w-[75%] flex gap-2 ${
-                        msg.sender === "user" ? "flex-row-reverse" : "flex-row"
-                      }`}>
+                      <div
+                        className={`max-w-[75%] flex gap-2 ${
+                          msg.sender === "user"
+                            ? "flex-row-reverse"
+                            : "flex-row"
+                        }`}
+                      >
                         <Avatar className="h-6 w-6">
                           <AvatarFallback>
-                            {msg.sender === "user"
-                              ? publicKey.slice(0, 2).toUpperCase()
-                              : peerPublicKey.slice(0, 2).toUpperCase()}
+                            {
+                              msg.sender === "user"
+                              ? <Image src={User1} alt="User 1" className="w-full h-full object-cover rounded-full" />
+                              : <Image src={User2} alt="User 2" className="w-full h-full object-cover rounded-full" />
+                            }
                           </AvatarFallback>
+                          
                         </Avatar>
-                        <div className={`p-3 rounded-lg ${
-                          msg.sender === "user"
-                            ? "bg-blue-500 text-white"
-                            : "bg-gray-100 text-black"
-                        }`}>
+                        
+                        <div
+                          className={`p-3 rounded-lg ${
+                            msg.sender === "user"
+                              ? "bg-blue-500 text-white"
+                              : "bg-gray-100 text-black"
+                          }`}
+                        >
                           <p className="font-semibold">{msg.text}</p>
-                          {msg.encryptedText && (
-                            <p className="text-xs mt-1 font-mono break-all opacity-50">
-                              Encrypted: {msg.encryptedText.substring(0, 50)}...
-                            </p>
-                          )}
-                          <p className={`text-xs mt-1 ${
-                            msg.sender === "user" 
-                              ? "text-blue-100" 
-                              : "text-gray-500"
-                          }`}>
+                          <p
+                            className={`text-xs mt-1 ${
+                              msg.sender === "user"
+                                ? "text-blue-100"
+                                : "text-gray-500"
+                            }`}
+                          >
                             {new Date(msg.timestamp).toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit'
+                              hour: "2-digit",
+                              minute: "2-digit",
                             })}
                           </p>
                         </div>
@@ -300,18 +307,15 @@ socketInstance.on("peers list", ({ peers }: { peers: string[] }) => {
             </ScrollArea>
 
             <div className="border-t pt-4">
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 <Input
                   placeholder="Type a message..."
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSend()}
                 />
-                <Button 
-                  onClick={handleSend}
-                  disabled={!message.trim()}
-                >
-                  <Send className="h-4 w-4 mr-2" />
+                <Button onClick={handleSend} disabled={!message.trim()} >
+                  <Send className="h-2 w-4 mr-2" />
                   Send
                 </Button>
               </div>
