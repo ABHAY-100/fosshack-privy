@@ -10,10 +10,12 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { io, Socket } from "socket.io-client";
+import { encryptMessage, decryptMessage, getKeysFromStorage } from '@/lib/cryptoUtils';
 
 type Message = {
   id: string;
   text: string;
+  encryptedText?: string; // Add this field
   sender: "user" | "other";
   timestamp: number;
 };
@@ -78,18 +80,30 @@ function ChatClient({ roomId }: { roomId: string }) {
       setConnectionStatus(`Error: ${err.message}`);
     });
 
-    socketInstance.on("room message", (data: {
+    socketInstance.on("room message", async (data: {
       id: string, 
       message: string, 
       from: string, 
       timestamp: number
     }) => {
-      setMessages(prev => [...prev, {
-        id: data.id,
-        text: data.message,
-        sender: data.from === storedKey ? "user" : "other",
-        timestamp: data.timestamp
-      }]);
+      try {
+        console.log("Received encrypted message:", data.message);
+        const myKeys = await getKeysFromStorage();
+        if (!myKeys) throw new Error("No keys found");
+
+        const decryptedMessage = await decryptMessage(data.message, myKeys.privateKey);
+        console.log("Decrypted message:", decryptedMessage);
+
+        setMessages(prev => [...prev, {
+          id: data.id,
+          text: decryptedMessage,
+          encryptedText: data.message,
+          sender: data.from === storedKey ? "user" : "other",
+          timestamp: data.timestamp
+        }]);
+      } catch (error) {
+        console.error("Decryption error:", error);
+      }
     });
 
     socketInstance.on("peer connected", ({ peerKey }) => {
@@ -123,31 +137,62 @@ function ChatClient({ roomId }: { roomId: string }) {
     };
   }, [roomId, router]);
 
-  const handleSend = () => {
-    if (!message.trim() || !socket) return;
+  const handleSend = async () => {
+    if (!message.trim() || !socket || !peerPublicKey) {
+      console.log("Send conditions not met:", { 
+        hasMessage: !!message.trim(), 
+        hasSocket: !!socket, 
+        hasPeerKey: !!peerPublicKey 
+      });
+      return;
+    }
 
-    const tempId = `${socket.id}-${Date.now()}`;
-    
-    // Optimistic update
-    setMessages(prev => [...prev, {
-      id: tempId,
-      text: message,
-      sender: "user",
-      timestamp: Date.now()
-    }]);
+    try {
+      console.log("Original message:", message);
+      console.log("Peer public key:", peerPublicKey);
 
-    socket.emit("room message", 
-      { message: message },
-      (ack: { status: string; messageId: string }) => {
-        if (ack.status === "delivered") {
-          setMessages(prev => prev.map(msg => 
-            msg.id === tempId ? { ...msg, id: ack.messageId } : msg
-          ));
+      const peerKeyData = Uint8Array.from(atob(peerPublicKey), c => c.charCodeAt(0));
+      const peerKey = await window.crypto.subtle.importKey(
+        'spki',
+        peerKeyData,
+        {
+          name: 'RSA-OAEP',
+          hash: 'SHA-256'
+        },
+        true,
+        ['encrypt']
+      );
+
+      console.log("Imported peer public key successfully");
+      const encryptedMessage = await encryptMessage(message, peerKey);
+      console.log("Encrypted message:", encryptedMessage);
+
+      const tempId = `${socket.id}-${Date.now()}`;
+      
+      setMessages(prev => [...prev, {
+        id: tempId,
+        text: message,
+        encryptedText: encryptedMessage,
+        sender: "user",
+        timestamp: Date.now()
+      }]);
+
+      socket.emit("room message", 
+        { message: encryptedMessage },
+        (ack: { status: string; messageId: string }) => {
+          console.log("Message delivery status:", ack.status);
+          if (ack.status === "delivered") {
+            setMessages(prev => prev.map(msg => 
+              msg.id === tempId ? { ...msg, id: ack.messageId } : msg
+            ));
+          }
         }
-      }
-    );
+      );
 
-    setMessage("");
+      setMessage("");
+    } catch (error) {
+      console.error("Encryption error:", error);
+    }
   };
 
   useEffect(() => {
@@ -221,9 +266,14 @@ function ChatClient({ roomId }: { roomId: string }) {
                         <div className={`p-3 rounded-lg ${
                           msg.sender === "user"
                             ? "bg-blue-500 text-white"
-                            : "bg-gray-100"
+                            : "bg-gray-100 text-black"
                         }`}>
-                          <p>{msg.text}</p>
+                          <p className="font-semibold">Original: {msg.text}</p>
+                          {msg.encryptedText && (
+                            <p className="text-xs mt-1 font-mono break-all opacity-50">
+                              Encrypted: {msg.encryptedText.substring(0, 50)}...
+                            </p>
+                          )}
                           <p className={`text-xs mt-1 ${
                             msg.sender === "user" 
                               ? "text-blue-100" 

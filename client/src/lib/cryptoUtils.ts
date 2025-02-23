@@ -1,5 +1,3 @@
-import { generateDeviceKey } from './browserFingerprint';
-
 const isBrowser = typeof window !== 'undefined';
 
 const checkCryptoSupport = () => {
@@ -13,7 +11,6 @@ interface KeyPair {
   privateKey: CryptoKey;
 }
 
-// Generates RSA-OAEP key pair for asymmetric encryption
 const generateKeyPair = async (): Promise<CryptoKeyPair> => {
   return await window.crypto.subtle.generateKey(
     {
@@ -22,37 +19,21 @@ const generateKeyPair = async (): Promise<CryptoKeyPair> => {
       publicExponent: new Uint8Array([1, 0, 1]),
       hash: 'SHA-256'
     },
-    true, // extractable
+    true,
     ['encrypt', 'decrypt']
   );
 };
 
-// Modified store keys function with AES encryption
 const storeKeys = async (keyPair: CryptoKeyPair) => {
-  const deviceKey = await generateDeviceKey();
   const exportedPublicKey = await window.crypto.subtle.exportKey('spki', keyPair.publicKey);
   const exportedPrivateKey = await window.crypto.subtle.exportKey('pkcs8', keyPair.privateKey);
   
-  // Encrypt private key with AES-GCM
-  const iv = window.crypto.getRandomValues(new Uint8Array(12));
-  const encryptedPrivateKey = await window.crypto.subtle.encrypt(
-    {
-      name: 'AES-GCM',
-      iv
-    },
-    deviceKey,
-    exportedPrivateKey
-  );
-
-  // Store everything
   const timestamp = Date.now();
   sessionStorage.setItem('keyedin_publickey', 
     btoa(String.fromCharCode(...new Uint8Array(exportedPublicKey)))
   );
   sessionStorage.setItem('keyedin_privatekey',
-    btoa(String.fromCharCode(...new Uint8Array(encryptedPrivateKey))) + 
-    '.' +
-    btoa(String.fromCharCode(...iv))
+    btoa(String.fromCharCode(...new Uint8Array(exportedPrivateKey)))
   );
   sessionStorage.setItem('keyedin_timestamp', timestamp.toString());
 };
@@ -65,33 +46,16 @@ const shouldRotateKeys = (): boolean => {
   return keyAge > 1 * 60 * 60 * 1000;
 };
 
-// Modified retrieve keys function with AES decryption
-const getKeysFromStorage = async (): Promise<KeyPair | null> => {
+export const getKeysFromStorage = async (): Promise<KeyPair | null> => {
   const publicKeyString = sessionStorage.getItem('keyedin_publickey');
   const privateKeyString = sessionStorage.getItem('keyedin_privatekey');
   
   if (!publicKeyString || !privateKeyString) return null;
 
   try {
-    const deviceKey = await generateDeviceKey();
     const publicKeyData = Uint8Array.from(atob(publicKeyString), c => c.charCodeAt(0));
-    
-    // Split private key data and IV
-    const [encPrivateKey, ivString] = privateKeyString.split('.');
-    const encryptedData = Uint8Array.from(atob(encPrivateKey), c => c.charCodeAt(0));
-    const iv = Uint8Array.from(atob(ivString), c => c.charCodeAt(0));
+    const privateKeyData = Uint8Array.from(atob(privateKeyString), c => c.charCodeAt(0));
 
-    // Decrypt private key
-    const privateKeyData = await window.crypto.subtle.decrypt(
-      {
-        name: 'AES-GCM',
-        iv
-      },
-      deviceKey,
-      encryptedData
-    );
-
-    // Import keys
     const publicKey = await window.crypto.subtle.importKey(
       'spki',
       publicKeyData,
@@ -146,6 +110,71 @@ export const cleanupKeys = () => {
   sessionStorage.removeItem('keyedin_privatekey');
   sessionStorage.removeItem('keyedin_publickey');
   sessionStorage.removeItem('keyedin_timestamp');
+};
+
+// Convert string to ArrayBuffer for encryption
+const str2ab = (str: string): ArrayBuffer => {
+  const encoder = new TextEncoder();
+  return encoder.encode(str).buffer as ArrayBuffer;
+};
+
+// Convert ArrayBuffer to string after decryption
+const ab2str = (buf: ArrayBuffer): string => {
+  const decoder = new TextDecoder();
+  return decoder.decode(buf);
+};
+
+export const encryptMessage = async (message: string, recipientPublicKey: CryptoKey): Promise<string> => {
+  checkCryptoSupport();
+  
+  try {
+    console.log("Starting encryption of message:", message);
+    const messageBuffer = str2ab(message);
+    console.log("Message converted to ArrayBuffer");
+    
+    const encryptedData = await window.crypto.subtle.encrypt(
+      {
+        name: 'RSA-OAEP'
+      },
+      recipientPublicKey,
+      messageBuffer
+    );
+    console.log("Message encrypted successfully");
+    
+    const base64Encoded = btoa(String.fromCharCode(...new Uint8Array(encryptedData)));
+    console.log("Encrypted message encoded to base64");
+    return base64Encoded;
+  } catch (error) {
+    console.error('Encryption error details:', error);
+    throw new Error('Failed to encrypt message');
+  }
+};
+
+export const decryptMessage = async (encryptedMessage: string, privateKey: CryptoKey): Promise<string> => {
+  checkCryptoSupport();
+  
+  try {
+    console.log("Starting decryption of message");
+    const encryptedData = Uint8Array.from(atob(encryptedMessage), c => c.charCodeAt(0));
+    console.log("Decoded base64 message to Uint8Array");
+    
+    const decryptedData = await window.crypto.subtle.decrypt(
+      {
+        name: 'RSA-OAEP'
+      },
+      privateKey,
+      encryptedData
+    );
+    console.log("Message decrypted successfully");
+    
+    
+    const decryptedText = ab2str(decryptedData);
+    console.log("Decrypted message converted to string:", decryptedText);
+    return decryptedText;
+  } catch (error) {
+    console.error('Decryption error details:', error);
+    throw new Error('Failed to decrypt message');
+  }
 };
 
 if (isBrowser) {
