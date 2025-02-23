@@ -6,6 +6,8 @@ Privy is a privacy-focused messaging platform that ensures your conversations re
 
 ![Privy](https://i.postimg.cc/28D1TDWZ/Untitled.jpg)
 
+<video src="demovideo.mp4" controls></video>
+
 ## Why Privy? 🤔
 
 In today's digital age, privacy isn't just a feature – it's a necessity. Traditional messaging platforms store your data, creating potential security vulnerabilities. Privy solves this by implementing true ephemeral messaging where nothing is ever written to disk. 🛡️
