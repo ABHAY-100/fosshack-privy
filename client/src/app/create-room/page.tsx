@@ -7,9 +7,8 @@ import { ArrowLeft, Copy, Share2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { QRCodeSVG } from "qrcode.react"; // Changed this line
-import { createContext } from "vm";
-export const RoomContext = createContext();
+import { QRCodeSVG } from "qrcode.react";
+
 export default function CreateRoomPage() {
   const router = useRouter();
   const [roomCode, setRoomCode] = useState("");
@@ -63,23 +62,19 @@ export default function CreateRoomPage() {
             <CardTitle className="text-center text-2xl">Room Created</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6 p-6">
-            {/* QR Code Display Area */}
             <motion.div
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
               transition={{ duration: 0.5 }}
               className="aspect-square bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg flex items-center justify-center border-2 border-dashed border-primary/20"
             >
-              {/* Changed QRCode to QRCodeSVG */}
               <QRCodeSVG
                 value={`http://localhost:3000/chat/${roomCode}`}
                 size={128}
                 className="w-full h-full"
               />
-              {/* <div className="text-sm text-muted-foreground">QR Code for Room: {roomCode}</div> */}
             </motion.div>
 
-            {/* Room Code Display */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
