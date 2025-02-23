@@ -69,7 +69,7 @@ export default function CreateRoomPage() {
               className="aspect-square bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg flex items-center justify-center border-2 border-dashed border-primary/20"
             >
               <QRCodeSVG
-                value={`http://localhost:3000/chat/${roomCode}`}
+                value={`https://privy-client.vercel.app/chat/${roomCode}`}
                 size={128}
                 className="w-full h-full"
               />
