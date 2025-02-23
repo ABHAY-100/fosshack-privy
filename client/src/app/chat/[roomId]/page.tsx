@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { io, Socket } from "socket.io-client";
 import { encryptMessage, decryptMessage, getKeysFromStorage } from '@/lib/cryptoUtils';
+import { toast } from "sonner";
 
 type Message = {
   id: string;
@@ -45,7 +46,7 @@ function ChatClient({ roomId }: { roomId: string }) {
       return;
     }
 
-    const socketInstance = io("https://keyedin.onrender.com", {
+    const socketInstance = io("https://bmh7d6sg-5000.inc1.devtunnels.ms/", {
       auth: {
         publicKey: storedKey,
         roomId: roomId
@@ -134,6 +135,14 @@ socketInstance.on("peers list", ({ peers }: { peers: string[] }) => {
       if (error.code === "INVALID_REGISTRATION") {
         router.push("/");
       }
+      
+      if (error.code === 'ROOM_FULL') {
+        // Display a toast notification
+        router.push("/");
+        toast.error("Room Full") // Replace with your toast library (e.g., Toastify, SweetAlert)
+    } else {
+        console.error('Registration error:', error.message);
+    }
     });
 
     if (socketInstance.connected) {
