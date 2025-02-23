@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -44,35 +43,37 @@ export default function JoinRoomPage() {
               <div className="space-y-2">
                 <div className="text-center space-y-2">
                   <div className="text-sm text-muted-foreground">Enter Room Code</div>
-                  <div className="flex justify-center gap-2">
-                    {Array(6)
-                      .fill(0)
-                      .map((_, i) => (
-                        <motion.div
-                          key={i}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.1 + i * 0.05 }}
-                          className="w-10 h-12"
-                        >
-                          <div
-                            className={`border-2 rounded-lg h-full flex items-center justify-center text-2xl font-mono ${
-                              code[i] ? "border-primary" : "border-muted-foreground/20"
-                            }`}
+                  <div className="relative">
+                    <div className="flex justify-center gap-2">
+                      {Array(6)
+                        .fill(0)
+                        .map((_, i) => (
+                          <motion.div
+                            key={i}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.1 + i * 0.05 }}
+                            className="w-10 h-12"
                           >
-                            {code[i] || ""}
-                          </div>
-                        </motion.div>
-                      ))}
+                            <div
+                              className={`border-2 rounded-lg h-full flex items-center justify-center text-2xl font-mono ${
+                                code[i] ? "border-primary" : "border-muted-foreground/20"
+                              }`}
+                            >
+                              {code[i] || ""}
+                            </div>
+                          </motion.div>
+                        ))}
+                    </div>
+                    <Input
+                      type="number"
+                      pattern="\d*"
+                      value={code}
+                      onChange={handleCodeChange}
+                      className="absolute top-0 left-0 w-full h-full opacity-0 cursor-text caret-transparent"
+                      autoFocus
+                    />
                   </div>
-                  <Input
-                    type="number"
-                    pattern="\d*"
-                    value={code}
-                    onChange={handleCodeChange}
-                    className="opacity-0 h-0 w-0 p-0 m-0 border-0"
-                    autoFocus
-                  />
                 </div>
               </div>
 
