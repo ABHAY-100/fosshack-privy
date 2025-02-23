@@ -46,7 +46,7 @@ function ChatClient({ roomId }: { roomId: string }) {
       return;
     }
 
-    const socketInstance = io("https://bmh7d6sg-5000.inc1.devtunnels.ms/", {
+    const socketInstance = io("https://keyedin.onrender.com", {
       auth: {
         publicKey: storedKey,
         roomId: roomId
