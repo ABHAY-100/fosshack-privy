@@ -128,9 +128,9 @@ export const encryptMessage = async (message: string, recipientPublicKey: Crypto
   checkCryptoSupport();
   
   try {
-    console.log("Starting encryption of message:", message);
+
     const messageBuffer = str2ab(message);
-    console.log("Message converted to ArrayBuffer");
+
     
     const encryptedData = await window.crypto.subtle.encrypt(
       {
@@ -139,10 +139,9 @@ export const encryptMessage = async (message: string, recipientPublicKey: Crypto
       recipientPublicKey,
       messageBuffer
     );
-    console.log("Message encrypted successfully");
+
     
     const base64Encoded = btoa(String.fromCharCode(...new Uint8Array(encryptedData)));
-    console.log("Encrypted message encoded to base64");
     return base64Encoded;
   } catch (error) {
     console.error('Encryption error details:', error);
@@ -154,9 +153,7 @@ export const decryptMessage = async (encryptedMessage: string, privateKey: Crypt
   checkCryptoSupport();
   
   try {
-    console.log("Starting decryption of message");
     const encryptedData = Uint8Array.from(atob(encryptedMessage), c => c.charCodeAt(0));
-    console.log("Decoded base64 message to Uint8Array");
     
     const decryptedData = await window.crypto.subtle.decrypt(
       {
@@ -165,11 +162,9 @@ export const decryptMessage = async (encryptedMessage: string, privateKey: Crypt
       privateKey,
       encryptedData
     );
-    console.log("Message decrypted successfully");
     
     
     const decryptedText = ab2str(decryptedData);
-    console.log("Decrypted message converted to string:", decryptedText);
     return decryptedText;
   } catch (error) {
     console.error('Decryption error details:', error);

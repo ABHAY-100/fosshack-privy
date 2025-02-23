@@ -50,7 +50,7 @@ function ChatClient({ roomId }: { roomId: string }) {
       return;
     }
 
-    const socketInstance = io("https://keyedin.onrender.com", {
+    const socketInstance = io(process.env.NEXT_PUBLIC_BACKEND_URL, { 
       auth: {
         publicKey: storedKey,
         roomId: roomId
@@ -72,7 +72,7 @@ function ChatClient({ roomId }: { roomId: string }) {
 
     socketInstance.on("connect", () => {
       setConnectionStatus("Connected");
-      console.log("Socket connected:", socketInstance.id);
+
     });
 
     socketInstance.on("disconnect", (reason) => {
@@ -118,20 +118,20 @@ socketInstance.on("peers list", ({ peers }: { peers: string[] }) => {
     const existingPeerKey = peers[0]; // Assuming 1:1 chat
     sessionStorage.setItem(`peerKey-${roomId}`, existingPeerKey);
     setPeerPublicKey(existingPeerKey);
-    console.log("Received existing peers:", peers);
+
   }
 });
 
     socketInstance.on("peer connected", ({ peerKey }) => {
       sessionStorage.setItem(`peerKey-${roomId}`, peerKey);
       setPeerPublicKey(peerKey);
-      console.log("Peer connected:", peerKey);
+
     });
 
     socketInstance.on("peer disconnected", () => {
       sessionStorage.removeItem(`peerKey-${roomId}`);
       setPeerPublicKey("");
-      console.log("Peer disconnected");
+
     });
 
     socketInstance.on("error", (error) => {

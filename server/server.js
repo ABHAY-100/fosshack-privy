@@ -22,11 +22,11 @@ const users = new Map(); // socket.id -> { publicKey, roomId }
 const rooms = new Map(); // roomId -> Set of socket IDs
 
 io.on("connection", (socket) => {
-    console.log(`User connected: ${socket.id}`);
+    // console.log(`User connected: ${socket.id}`);
 
     socket.on("register", (data) => {
         try {
-            console.log("Registration attempt:", data);
+            // console.log("Registration attempt:", data);
             
             if (!data || typeof data !== "object") {
                 throw new Error("Invalid registration format");
@@ -55,7 +55,7 @@ io.on("connection", (socket) => {
                 rooms.get(roomId).add(socket.id);
             }
 
-            console.log(`Registered: ${publicKey} in ${roomId}`);
+            // console.log(`Registered: ${publicKey} in ${roomId}`);
 
             const roomMembers = rooms.get(roomId);
             // Inside the 'register' event handler
@@ -129,7 +129,7 @@ function handleDisconnect(socketId) {
         }
 
         users.delete(socketId);
-        console.log(`User disconnected: ${socketId}`);
+        // console.log(`User disconnected: ${socketId}`);
     } catch (error) {
         console.error("Disconnect error:", error.message);
     }
