@@ -42,11 +42,13 @@ function ChatClient({ roomId }: { roomId: string }) {
     const storedKey = sessionStorage.getItem("keyedin_publickey");
     if (!storedKey?.trim()) {
       router.push("/");
+      toast.error("User not authorized")
       return;
     }
     setPublicKey(storedKey);
 
     if (!roomId?.trim()) {
+      toast.error("Room not loaded")
       router.push("/");
       return;
     }
@@ -66,7 +68,7 @@ function ChatClient({ roomId }: { roomId: string }) {
         roomId: roomId 
       }, (response: { status: string }) => {
         if (response?.status !== "success") {
-          console.error("Registration failed");
+          toast.error("Registration failed");
         }
       });
     };
@@ -85,7 +87,7 @@ function ChatClient({ roomId }: { roomId: string }) {
     });
 
     socketInstance.on("connect_error", (err) => {
-      console.error("Connection error:", err.message);
+      toast.error("Connection error");
       setConnectionStatus(`Error: ${err.message}`);
     });
 
@@ -108,8 +110,8 @@ function ChatClient({ roomId }: { roomId: string }) {
           sender: data.from === storedKey ? "user" : "other",
           timestamp: data.timestamp
         }]);
-      } catch (error) {
-        console.error("Decryption error:", error);
+      } catch (error: unknown) {
+       toast.error(String(error))
       }
     });
 
@@ -138,7 +140,9 @@ socketInstance.on("peers list", ({ peers }: { peers: string[] }) => {
     socketInstance.on("error", (error) => {
       console.error("Socket error:", error);
       if (error.code === "INVALID_REGISTRATION") {
+        toast.error(error.code)
         router.push("/");
+
       }
       
       if (error.code === 'ROOM_FULL') {
@@ -146,7 +150,7 @@ socketInstance.on("peers list", ({ peers }: { peers: string[] }) => {
         router.push("/");
         toast.error("Room Full") // Replace with your toast library (e.g., Toastify, SweetAlert)
     } else {
-        console.error('Registration error:', error.message);
+        toast.error(error.message);
     }
     });
 
@@ -201,8 +205,8 @@ socketInstance.on("peers list", ({ peers }: { peers: string[] }) => {
       );
 
       setMessage("");
-    } catch (error) {
-      console.error("Encryption error:", error);
+    } catch (error : unknown) {
+      toast.error((error as Error).message);
     }
   };
 
