@@ -2,6 +2,6 @@ const express = require('express')
 
 const router = express.Router()
 router.post('/post-route' , (req , res)=>{
-    res.send("Hello")
+    res.status(200)
 })
 module.exports={router}
