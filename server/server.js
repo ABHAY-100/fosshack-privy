@@ -6,7 +6,7 @@ const { router } = require("./route/postRoute");
 
 const app = express();
 app.use(cors());
-app.use(router)
+app.use("/", router)
 const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
