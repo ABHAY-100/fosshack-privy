@@ -376,3 +376,4 @@ export default function ChatPage({
   const { roomId } = use(params);
   return <ChatClient roomId={roomId} />;
 }
+
