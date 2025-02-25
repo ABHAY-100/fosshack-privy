@@ -2,9 +2,7 @@
 
 import React, { useState, useRef, useEffect, use } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { ArrowLeft, Send } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -38,7 +36,6 @@ function ChatClient({ roomId }: { roomId: string }) {
     sessionStorage.getItem(`peerKey-${roomId}`) || ""
   );
   const [connectionStatus, setConnectionStatus] = useState("Connecting...");
-  const [publicKey, setPublicKey] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -48,7 +45,6 @@ function ChatClient({ roomId }: { roomId: string }) {
       toast.error("User not authorized");
       return;
     }
-    setPublicKey(storedKey);
 
     if (!roomId?.trim()) {
       toast.error("Room not loaded");
@@ -90,7 +86,7 @@ function ChatClient({ roomId }: { roomId: string }) {
     });
 
     socketInstance.on("disconnect", (reason) => {
-      setConnectionStatus(`Disconnected: ${reason}`);
+      setConnectionStatus("Disconnected");
       sessionStorage.removeItem(`peerKey-${roomId}`);
       if (reason === "io server disconnect") {
         router.push("/");
@@ -135,7 +131,6 @@ function ChatClient({ roomId }: { roomId: string }) {
       }
     );
 
-    // Inside the useEffect where socket events are set up
     socketInstance.on("peers list", ({ peers }: { peers: string[] }) => {
       if (peers.length > 0) {
         const existingPeerKey = peers[0]; // Assuming 1:1 chat
@@ -162,9 +157,8 @@ function ChatClient({ roomId }: { roomId: string }) {
       }
 
       if (error.code === "ROOM_FULL") {
-        // Display a toast notification
         router.push("/");
-        toast.error("Room Full"); // Replace with your toast library (e.g., Toastify, SweetAlert)
+        toast.error("Room Full");
       } else {
         toast.error(error.message);
       }
@@ -245,20 +239,18 @@ function ChatClient({ roomId }: { roomId: string }) {
         animate={{ opacity: 1, y: 0 }}
         className="w-full h-full"
       >
-        <Card className="shadow-lg w-full h-full flex flex-col rounded-none">
-          <CardHeader>
-            <div className="flex items-center justify-between rounded-none">
+        <div className="w-full h-full flex flex-col">
+          {/* Fixed Header */}
+          <div className="bg-card border-b sticky top-0 z-10 shadow-md">
+            <div className="p-4 flex items-center justify-between">
               <Button
                 variant="ghost"
                 onClick={() => router.push("/")}
-                className="gap-2 bg-white/5"
+                className="gap-2 bg-white/5 rounded-none ml-[-6px]"
               >
                 <ArrowLeft className="h-4 w-4" />
                 Back
               </Button>
-              <p className="hidden font-bold tracking-wider sm:flex items-center ">
-                Room : {roomId}
-              </p>
               <div className="flex items-center gap-4">
                 <div className="flex -space-x-2">
                   <Avatar className="border-[1px] border-white">
@@ -279,97 +271,98 @@ function ChatClient({ roomId }: { roomId: string }) {
                     </Avatar>
                   )}
                 </div>
-                <div className="text-sm text-gray-500">
-                  Status: {connectionStatus}
+                <div className="hidden font-medium px-3 text-sm tracking-wide sm:flex items-center bg-white/5 py-2">
+                  status: {connectionStatus}
                 </div>
+                <p className="hidden font-medium px-3 text-sm tracking-wide sm:flex items-center bg-white/5 py-2">
+                  room id: {roomId}
+                </p>
               </div>
             </div>
-          </CardHeader>
+          </div>
 
-          <CardContent className="p-4 h-screen flex flex-col">
-            <ScrollArea className="flex-1 pr-4 mb-4">
-              <AnimatePresence initial={false}>
-                <div className="space-y-4">
-                  {messages.map((msg) => (
-                    <motion.div
-                      key={msg.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className={`flex ${
-                        msg.sender === "user" ? "justify-end" : "justify-start"
+          {/* Scrollable Message Area */}
+          <div className="flex-1 overflow-auto p-4">
+            <AnimatePresence initial={false}>
+              <div className="space-y-4">
+                {messages.map((msg) => (
+                  <motion.div
+                    key={msg.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className={`flex ${
+                      msg.sender === "user" ? "justify-end" : "justify-start"
+                    }`}
+                  >
+                    <div
+                      className={`max-w-[75%] flex gap-3 ${
+                        msg.sender === "user" ? "flex-row-reverse" : "flex-row"
                       }`}
                     >
+                      <Avatar className="h-7 w-7">
+                        <AvatarFallback>
+                          {msg.sender === "user" ? (
+                            <Image
+                              src={User1}
+                              alt="User 1"
+                              className="w-full h-full object-cover rounded-full"
+                            />
+                          ) : (
+                            <Image
+                              src={User2}
+                              alt="User 2"
+                              className="w-full h-full object-cover rounded-full"
+                            />
+                          )}
+                        </AvatarFallback>
+                      </Avatar>
+
                       <div
-                        className={`max-w-[75%] flex gap-2 ${
+                        className={`py-2 px-4 rounded-xl max-w-[50vw] break-words whitespace-normal overflow-hidden ${
                           msg.sender === "user"
-                            ? "flex-row-reverse"
-                            : "flex-row"
+                            ? "bg-[#512FEB] text-white"
+                            : "bg-white/[0.1] text-white"
                         }`}
                       >
-                        <Avatar className="h-6 w-6">
-                          <AvatarFallback>
-                            {msg.sender === "user" ? (
-                              <Image
-                                src={User1}
-                                alt="User 1"
-                                className="w-full h-full object-cover rounded-full"
-                              />
-                            ) : (
-                              <Image
-                                src={User2}
-                                alt="User 2"
-                                className="w-full h-full object-cover rounded-full"
-                              />
-                            )}
-                          </AvatarFallback>
-                        </Avatar>
-
-                        <div
-                          className={`p-3 rounded-lg ${
+                        <p className="font-semibold">{msg.text}</p>
+                        <p
+                          className={`text-xs ${
                             msg.sender === "user"
-                              ? "bg-blue-500 text-white"
-                              : "bg-gray-100 text-black"
+                              ? "text-blue-100"
+                              : "text-gray-500"
                           }`}
-                        >
-                          <p className="font-semibold">{msg.text}</p>
-                          <p
-                            className={`text-xs mt-1 ${
-                              msg.sender === "user"
-                                ? "text-blue-100"
-                                : "text-gray-500"
-                            }`}
-                          >
-                            {new Date(msg.timestamp).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </p>
-                        </div>
+                        ></p>
                       </div>
-                    </motion.div>
-                  ))}
-                  <div ref={scrollRef} />
-                </div>
-              </AnimatePresence>
-            </ScrollArea>
-
-            <div className="border-t pt-4">
-              <div className="flex gap-3">
-                <Input
-                  placeholder="Type a message..."
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                />
-                <Button onClick={handleSend} disabled={!message.trim()}>
-                  <Send className="h-2 w-4 mr-2" />
-                  Send
-                </Button>
+                    </div>
+                  </motion.div>
+                ))}
+                <div ref={scrollRef} />
               </div>
+            </AnimatePresence>
+          </div>
+
+          {/* Fixed Footer */}
+          <div className="bg-card border-t sticky bottom-0 z-10 p-4 shadow-md">
+            <div className="flex gap-3">
+              <Input
+                placeholder="Type a message..."
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                className="border-2 border-solid rounded-none focus:ring-0"
+                style={{ outline: "none", boxShadow: "none" }}
+              />
+              <Button
+                onClick={handleSend}
+                disabled={!message.trim()}
+                className="rounded-none flex"
+              >
+                <Send className="h-4 w-6 scale-125" />
+              </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </motion.div>
     </div>
   );
