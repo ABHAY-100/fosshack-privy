@@ -2,13 +2,26 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "sonner";
 
-/** 
- * Metadata configuration for SEO and page information
- * @see https://nextjs.org/docs/app/api-reference/functions/generate-metadata
- */
 export const metadata: Metadata = {
-  title: "Privy",
-  description: "Secure end-to-end encrypted chat application",
+  title: "Privy - Safe & Anonymous Chat Platform",
+  description:
+    "Connect with people worldwide through private, anonymous conversations. No registration, no data storage, just instant secure chats.",
+  keywords: [
+    "privy",
+    "chat",
+    "messaging",
+    "encryption",
+    "privacy",
+    "anonymous",
+    "secure",
+    "chatroom",
+    "chat platform",
+    "privacy-focused",
+    "anonymous messaging",
+    "private chats",
+    "secure messaging",
+    "anonymous chats",
+  ],
 };
 
 export default function RootLayout({
@@ -19,16 +32,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Custom font loading for Clash Grotesk */}
         <link
-          href="https://api.fontshare.com/v2/css?f[]=clash-grotesk@1&display=swap"
+          href="https://api.fontshare.com/v2/css?f[]=satoshi@1,2&display=swap"
           rel="stylesheet"
         />
       </head>
-      {/* antialiased class smooths font rendering */}
       <body className={`antialiased`}>
         {children}
-        {/* Global toast notifications container */}
         <Toaster />
       </body>
     </html>

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import React, { useState, useRef, useEffect, use } from "react";
@@ -11,11 +10,15 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { io, Socket } from "socket.io-client";
-import Image from 'next/image';
+import Image from "next/image";
 import User1 from "../../../../public/user_1.jpg";
 import User2 from "../../../../public/user_2.jpg";
 
-import { encryptMessage, decryptMessage, getKeysFromStorage } from '@/lib/cryptoUtils';
+import {
+  encryptMessage,
+  decryptMessage,
+  getKeysFromStorage,
+} from "@/lib/cryptoUtils";
 import { toast } from "sonner";
 
 type Message = {
@@ -42,46 +45,49 @@ function ChatClient({ roomId }: { roomId: string }) {
     const storedKey = sessionStorage.getItem("keyedin_publickey");
     if (!storedKey?.trim()) {
       router.push("/");
-      toast.error("User not authorized")
+      toast.error("User not authorized");
       return;
     }
     setPublicKey(storedKey);
 
     if (!roomId?.trim()) {
-      toast.error("Room not loaded")
+      toast.error("Room not loaded");
       router.push("/");
       return;
     }
 
-    const socketInstance = io(process.env.NEXT_PUBLIC_BACKEND_URL, { 
+    const socketInstance = io(process.env.NEXT_PUBLIC_BACKEND_URL, {
       auth: {
         publicKey: storedKey,
-        roomId: roomId
+        roomId: roomId,
       },
       reconnectionAttempts: 3,
       timeout: 5000,
     });
 
     const handleRegister = () => {
-      socketInstance.emit("register", { 
-        publicKey: storedKey,
-        roomId: roomId 
-      }, (response: { status: string }) => {
-        if (response?.status !== "success") {
-          toast.error("Registration failed");
+      socketInstance.emit(
+        "register",
+        {
+          publicKey: storedKey,
+          roomId: roomId,
+        },
+        (response: { status: string }) => {
+          if (response?.status !== "success") {
+            toast.error("Registration failed");
+          }
         }
-      });
+      );
     };
 
     socketInstance.on("connect", () => {
       setConnectionStatus("Connected");
-
     });
 
-    socketInstance.on("room_full" , ()=>{
-      router.push('/')
-      toast.error("Room is full")
-    })
+    socketInstance.on("room_full", () => {
+      router.push("/");
+      toast.error("Room is full");
+    });
 
     socketInstance.on("disconnect", (reason) => {
       setConnectionStatus(`Disconnected: ${reason}`);
@@ -96,67 +102,72 @@ function ChatClient({ roomId }: { roomId: string }) {
       setConnectionStatus(`Error: ${err.message}`);
     });
 
-    socketInstance.on("room message", async (data: {
-      id: string, 
-      message: string, 
-      from: string, 
-      timestamp: number
-    }) => {
-      try {
-        const myKeys = await getKeysFromStorage();
-        if (!myKeys) throw new Error("No keys found");
+    socketInstance.on(
+      "room message",
+      async (data: {
+        id: string;
+        message: string;
+        from: string;
+        timestamp: number;
+      }) => {
+        try {
+          const myKeys = await getKeysFromStorage();
+          if (!myKeys) throw new Error("No keys found");
 
-        const decryptedMessage = await decryptMessage(data.message, myKeys.privateKey);
-        
-        setMessages(prev => [...prev, {
-          id: data.id,
-          text: decryptedMessage,
-          encryptedText: data.message,
-          sender: data.from === storedKey ? "user" : "other",
-          timestamp: data.timestamp
-        }]);
-      } catch (error: unknown) {
-       toast.error(String(error))
+          const decryptedMessage = await decryptMessage(
+            data.message,
+            myKeys.privateKey
+          );
+
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: data.id,
+              text: decryptedMessage,
+              encryptedText: data.message,
+              sender: data.from === storedKey ? "user" : "other",
+              timestamp: data.timestamp,
+            },
+          ]);
+        } catch (error: unknown) {
+          toast.error(String(error));
+        }
       }
-    });
+    );
 
     // Inside the useEffect where socket events are set up
-socketInstance.on("peers list", ({ peers }: { peers: string[] }) => {
-  if (peers.length > 0) {
-    const existingPeerKey = peers[0]; // Assuming 1:1 chat
-    sessionStorage.setItem(`peerKey-${roomId}`, existingPeerKey);
-    setPeerPublicKey(existingPeerKey);
-
-  }
-});
+    socketInstance.on("peers list", ({ peers }: { peers: string[] }) => {
+      if (peers.length > 0) {
+        const existingPeerKey = peers[0]; // Assuming 1:1 chat
+        sessionStorage.setItem(`peerKey-${roomId}`, existingPeerKey);
+        setPeerPublicKey(existingPeerKey);
+      }
+    });
 
     socketInstance.on("peer connected", ({ peerKey }) => {
       sessionStorage.setItem(`peerKey-${roomId}`, peerKey);
       setPeerPublicKey(peerKey);
-
     });
 
     socketInstance.on("peer disconnected", () => {
       sessionStorage.removeItem(`peerKey-${roomId}`);
       setPeerPublicKey("");
-
     });
 
     socketInstance.on("error", (error) => {
       console.error("Socket error:", error);
       if (error.code === "INVALID_REGISTRATION") {
-        toast.error(error.code)
+        toast.error(error.code);
         router.push("/");
-
       }
-      
-      if (error.code === 'ROOM_FULL') {
+
+      if (error.code === "ROOM_FULL") {
         // Display a toast notification
         router.push("/");
-        toast.error("Room Full") // Replace with your toast library (e.g., Toastify, SweetAlert)
-    } else {
+        toast.error("Room Full"); // Replace with your toast library (e.g., Toastify, SweetAlert)
+      } else {
         toast.error(error.message);
-    }
+      }
     });
 
     if (socketInstance.connected) {
@@ -178,39 +189,47 @@ socketInstance.on("peers list", ({ peers }: { peers: string[] }) => {
     if (!message.trim() || !socket || !peerPublicKey) return;
 
     try {
-      const peerKeyData = Uint8Array.from(atob(peerPublicKey), c => c.charCodeAt(0));
+      const peerKeyData = Uint8Array.from(atob(peerPublicKey), (c) =>
+        c.charCodeAt(0)
+      );
       const peerKey = await window.crypto.subtle.importKey(
-        'spki',
+        "spki",
         peerKeyData,
-        { name: 'RSA-OAEP', hash: 'SHA-256' },
+        { name: "RSA-OAEP", hash: "SHA-256" },
         true,
-        ['encrypt']
+        ["encrypt"]
       );
 
       const encryptedMessage = await encryptMessage(message, peerKey);
       const tempId = `${socket.id}-${Date.now()}`;
-      
-      setMessages(prev => [...prev, {
-        id: tempId,
-        text: message,
-        encryptedText: encryptedMessage,
-        sender: "user",
-        timestamp: Date.now()
-      }]);
 
-      socket.emit("room message", 
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: tempId,
+          text: message,
+          encryptedText: encryptedMessage,
+          sender: "user",
+          timestamp: Date.now(),
+        },
+      ]);
+
+      socket.emit(
+        "room message",
         { message: encryptedMessage },
         (ack: { status: string; messageId: string }) => {
           if (ack.status === "delivered") {
-            setMessages(prev => prev.map(msg => 
-              msg.id === tempId ? { ...msg, id: ack.messageId } : msg
-            ));
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === tempId ? { ...msg, id: ack.messageId } : msg
+              )
+            );
           }
         }
       );
 
       setMessage("");
-    } catch (error : unknown) {
+    } catch (error: unknown) {
       toast.error((error as Error).message);
     }
   };
@@ -237,20 +256,32 @@ socketInstance.on("peers list", ({ peers }: { peers: string[] }) => {
                 <ArrowLeft className="h-4 w-4" />
                 Back
               </Button>
-              <p className="hidden font-bold tracking-wider sm:flex items-center ">Room : {roomId}</p>
+              <p className="hidden font-bold tracking-wider sm:flex items-center ">
+                Room : {roomId}
+              </p>
               <div className="flex items-center gap-4">
                 <div className="flex -space-x-2">
                   <Avatar className="border-[1px] border-white">
-                    <Image src={User1} alt="User 1" className="w-full h-full object-cover rounded-full" />
+                    <Image
+                      src={User1}
+                      alt="User 1"
+                      className="w-full h-full object-cover rounded-full"
+                    />
                   </Avatar>
 
                   {peerPublicKey && (
                     <Avatar className="border-[1px] border-white">
-                      <Image src={User2} alt="User 2" className="w-full h-full object-cover rounded-full" />
+                      <Image
+                        src={User2}
+                        alt="User 2"
+                        className="w-full h-full object-cover rounded-full"
+                      />
                     </Avatar>
                   )}
                 </div>
-                <div className="text-sm text-gray-500">Status: {connectionStatus}</div>
+                <div className="text-sm text-gray-500">
+                  Status: {connectionStatus}
+                </div>
               </div>
             </div>
           </CardHeader>
@@ -278,15 +309,22 @@ socketInstance.on("peers list", ({ peers }: { peers: string[] }) => {
                       >
                         <Avatar className="h-6 w-6">
                           <AvatarFallback>
-                            {
-                              msg.sender === "user"
-                              ? <Image src={User1} alt="User 1" className="w-full h-full object-cover rounded-full" />
-                              : <Image src={User2} alt="User 2" className="w-full h-full object-cover rounded-full" />
-                            }
+                            {msg.sender === "user" ? (
+                              <Image
+                                src={User1}
+                                alt="User 1"
+                                className="w-full h-full object-cover rounded-full"
+                              />
+                            ) : (
+                              <Image
+                                src={User2}
+                                alt="User 2"
+                                className="w-full h-full object-cover rounded-full"
+                              />
+                            )}
                           </AvatarFallback>
-                          
                         </Avatar>
-                        
+
                         <div
                           className={`p-3 rounded-lg ${
                             msg.sender === "user"
@@ -324,7 +362,7 @@ socketInstance.on("peers list", ({ peers }: { peers: string[] }) => {
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSend()}
                 />
-                <Button onClick={handleSend} disabled={!message.trim()} >
+                <Button onClick={handleSend} disabled={!message.trim()}>
                   <Send className="h-2 w-4 mr-2" />
                   Send
                 </Button>

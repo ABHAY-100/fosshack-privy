@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { ArrowLeft, Copy, Share2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -14,12 +20,10 @@ export default function CreateRoomPage() {
   const [roomCode, setRoomCode] = useState("");
   const [copying, setCopying] = useState(false);
 
-  /** Generate 6-digit room code on component mount */
   useEffect(() => {
     setRoomCode(Math.floor(100000 + Math.random() * 900000).toString());
   }, []);
 
-  /** Handle copy to clipboard with user feedback */
   const handleCopy = async () => {
     setCopying(true);
     await navigator.clipboard.writeText(roomCode);
@@ -27,14 +31,13 @@ export default function CreateRoomPage() {
     setCopying(false);
   };
 
-  /** Handle native share if available on device */
   const handleShare = async () => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "Join my chat room",
-          text: `Join my chat room with code: ${roomCode} https://privy-client.vercel.app/join-room`,
-        });
+          title: "Join My Chat Room",
+          text: `Use this code to join my chat: ${roomCode}\n https://privy-client.vercel.app`,
+        });        
       } catch (err) {
         toast.error(`Couldn't share room code : ${err}`);
       }
@@ -42,36 +45,43 @@ export default function CreateRoomPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-black from-background to-muted py-[120px]">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-black from-background to-muted py-[60px]">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="w-full max-w-md"
       >
-        <Card className="border-2">
+        <Card className="border-2 border-dashed rounded-none">
           <CardHeader className="relative">
             <Button
               variant="ghost"
               size="icon"
-              className="absolute left-4 top-4"
+              className="absolute left-4 top-4 rounded-none"
               onClick={() => router.back()}
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            <CardTitle className="text-center text-2xl">Room Created</CardTitle>
+            <div className="flex flex-col items-center gap-[8px]">
+              <CardTitle className="text-center text-3xl lowercase">
+                Room Created
+              </CardTitle>
+              <CardDescription className="text-center text-sm text-muted-foreground lowercase">
+                Scan the QR or share the code—your call.
+              </CardDescription>
+            </div>
           </CardHeader>
           <CardContent className="space-y-6 p-6">
             <motion.div
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
               transition={{ duration: 0.5 }}
-              className="aspect-square bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg flex items-center justify-center border-2 border-dashed border-primary/20"
+              className="aspect-square bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center rounded-none border-2 border-dashed border-primary/20 w-40 mx-auto"
             >
               <QRCodeSVG
-                value={`https://privy-client.vercel.app/chat/${roomCode}`}
+                value={`https://privy-client.vercel.app`}
                 size={128}
-                className="w-full h-full"
+                className="w-full h-full border-none rounded-none"
               />
             </motion.div>
 
@@ -82,8 +92,10 @@ export default function CreateRoomPage() {
               className="space-y-4"
             >
               <div className="text-center space-y-2">
-                <div className="text-sm text-muted-foreground">Room Code</div>
-                <div className="text-4xl font-mono font-semibold tracking-wider bg-muted rounded-lg py-4">
+                <div className="text-md font-semibold text-muted-foreground lowercase">
+                  room code ⬇️
+                </div>
+                <div className="text-4xl font-mono font-semibold tracking-wider bg-muted rounded-none py-3">
                   {roomCode.split("").map((digit, i) => (
                     <motion.span
                       key={i}
@@ -101,7 +113,7 @@ export default function CreateRoomPage() {
               <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  className="flex-1"
+                  className="flex-1 border-2 border-dashed border-primary/20 rounded-none py-5 lowercase text-md"
                   onClick={handleCopy}
                   disabled={copying}
                 >
@@ -110,7 +122,7 @@ export default function CreateRoomPage() {
                 </Button>
                 <Button
                   variant="outline"
-                  className="flex-1"
+                  className="flex-1 border-2 border-dashed border-primary/20 rounded-none py-5 lowercase text-md"
                   onClick={handleShare}
                 >
                   <Share2 className="w-4 h-4 mr-2" />
@@ -126,7 +138,7 @@ export default function CreateRoomPage() {
             >
               <Button
                 onClick={() => router.push(`/chat/${roomCode}`)}
-                className="w-full"
+                className="w-full lowercase text-xl font-semibold py-7 rounded-none mt-2"
                 size="lg"
               >
                 Continue to Chat

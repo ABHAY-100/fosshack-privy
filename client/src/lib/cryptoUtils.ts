@@ -1,7 +1,5 @@
-const isBrowser = typeof window !== 'undefined';
-
 const checkCryptoSupport = () => {
-  if (!isBrowser || !window.crypto || !window.crypto.subtle) {
+  if (typeof window === 'undefined' || !window.crypto || !window.crypto.subtle) {
     throw new Error('Web Crypto API is not supported in this environment');
   }
 };
@@ -41,47 +39,50 @@ const storeKeys = async (keyPair: CryptoKeyPair) => {
 const shouldRotateKeys = (): boolean => {
   const timestamp = sessionStorage.getItem('keyedin_timestamp');
   if (!timestamp) return true;
-
-  const keyAge = Date.now() - parseInt(timestamp, 10);
-  return keyAge > 1 * 60 * 60 * 1000;
+  
+  const KEY_ROTATION_INTERVAL = 60 * 60 * 1000;
+  return (Date.now() - parseInt(timestamp, 10)) > KEY_ROTATION_INTERVAL;
 };
 
 export const getKeysFromStorage = async (): Promise<KeyPair | null> => {
-  const publicKeyString = sessionStorage.getItem('keyedin_publickey');
-  const privateKeyString = sessionStorage.getItem('keyedin_privatekey');
-  
-  if (!publicKeyString || !privateKeyString) return null;
-
   try {
+    const publicKeyString = sessionStorage.getItem('keyedin_publickey');
+    const privateKeyString = sessionStorage.getItem('keyedin_privatekey');
+    
+    if (!publicKeyString || !privateKeyString) return null;
+
     const publicKeyData = Uint8Array.from(atob(publicKeyString), c => c.charCodeAt(0));
     const privateKeyData = Uint8Array.from(atob(privateKeyString), c => c.charCodeAt(0));
 
-    const publicKey = await window.crypto.subtle.importKey(
-      'spki',
-      publicKeyData,
-      {
-        name: 'RSA-OAEP',
-        hash: 'SHA-256'
-      },
-      true,
-      ['encrypt']
-    );
-
-    const privateKey = await window.crypto.subtle.importKey(
-      'pkcs8',
-      privateKeyData,
-      {
-        name: 'RSA-OAEP',
-        hash: 'SHA-256'
-      },
-      true,
-      ['decrypt']
-    );
+    const [publicKey, privateKey] = await Promise.all([
+      window.crypto.subtle.importKey(
+        'spki',
+        publicKeyData,
+        {
+          name: 'RSA-OAEP',
+          hash: 'SHA-256'
+        },
+        true,
+        ['encrypt']
+      ),
+      window.crypto.subtle.importKey(
+        'pkcs8',
+        privateKeyData,
+        {
+          name: 'RSA-OAEP',
+          hash: 'SHA-256'
+        },
+        true,
+        ['decrypt']
+      )
+    ]);
 
     return { publicKey, privateKey };
   } catch (error) {
-    console.error('Error importing keys:', error);
-    return null;
+    if (error instanceof Error) {
+      throw new Error(`Failed to import keys: ${error.message}`);
+    }
+    throw error;
   }
 };
 
@@ -127,54 +128,55 @@ const ab2str = (buf: ArrayBuffer): string => {
 export const encryptMessage = async (message: string, recipientPublicKey: CryptoKey): Promise<string> => {
   checkCryptoSupport();
   
+  if (!message) {
+    throw new Error('Message cannot be empty');
+  }
+
   try {
-
     const messageBuffer = str2ab(message);
-
-    
     const encryptedData = await window.crypto.subtle.encrypt(
-      {
-        name: 'RSA-OAEP'
-      },
+      { name: 'RSA-OAEP' },
       recipientPublicKey,
       messageBuffer
     );
-
-    
-    const base64Encoded = btoa(String.fromCharCode(...new Uint8Array(encryptedData)));
-    return base64Encoded;
+    return btoa(String.fromCharCode(...new Uint8Array(encryptedData)));
   } catch (error) {
-    console.error('Encryption error details:', error);
-    throw new Error('Failed to encrypt message');
+    if (error instanceof Error) {
+      throw new Error(`Encryption failed: ${error.message}`);
+    }
+    throw error;
   }
 };
 
 export const decryptMessage = async (encryptedMessage: string, privateKey: CryptoKey): Promise<string> => {
   checkCryptoSupport();
   
+  if (!encryptedMessage) {
+    throw new Error('Encrypted message cannot be empty');
+  }
+
   try {
     const encryptedData = Uint8Array.from(atob(encryptedMessage), c => c.charCodeAt(0));
-    
     const decryptedData = await window.crypto.subtle.decrypt(
-      {
-        name: 'RSA-OAEP'
-      },
+      { name: 'RSA-OAEP' },
       privateKey,
       encryptedData
     );
-    
-    
-    const decryptedText = ab2str(decryptedData);
-    return decryptedText;
+    return ab2str(decryptedData);
   } catch (error) {
-    console.error('Decryption error details:', error);
-    throw new Error('Failed to decrypt message');
+    if (error instanceof Error) {
+      throw new Error(`Decryption failed: ${error.message}`);
+    }
+    throw error;
   }
 };
 
-if (isBrowser) {
-  window.addEventListener('load', () => {
-    checkAndRotateKeys().catch(console.error);
+// Event listeners with proper cleanup
+if (typeof window !== 'undefined') {
+  const initKeys = () => checkAndRotateKeys().catch(error => {
+    console.error('Failed to initialize keys:', error);
   });
+  
+  window.addEventListener('load', initKeys);
   window.addEventListener('unload', cleanupKeys);
 }
