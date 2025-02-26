@@ -168,8 +168,8 @@ export const getKeysFromStorage = async (): Promise<KeyPair | null> => {
     const keyData: StoredKeyData = JSON.parse(keyDataString);
     if (Date.now() - keyData.timestamp > 60 * 60 * 1000) {
       sessionStorage.removeItem("privyUsrKeys");
-      if (typeof window !== 'undefined') {
-        window.location.href = '/';
+      if (typeof window !== "undefined") {
+        window.location.href = "/";
       }
       return null;
     }
@@ -242,7 +242,6 @@ const initializeKeys = async () => {
 };
 
 if (typeof window !== "undefined") {
-  localStorage.clear();
   window.addEventListener("load", initializeKeys);
   window.addEventListener("unload", cleanupKeys);
 }

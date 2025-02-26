@@ -47,7 +47,6 @@ function ChatClient({ roomId }: { roomId: string }) {
           keys = await generateAndStoreKeys();
         }
 
-        // Export the public key to string format first
         const publicKeyString = await exportPublicKey(keys.publicKey);
 
         if (!publicKeyString || !keys.privateKey) {
@@ -58,7 +57,7 @@ function ChatClient({ roomId }: { roomId: string }) {
 
         const socketInstance = io(process.env.NEXT_PUBLIC_BACKEND_URL, {
           auth: {
-            publicKey: publicKeyString, // Use the string version
+            publicKey: publicKeyString,
             roomId: roomId,
           },
           reconnectionAttempts: 3,
@@ -67,14 +66,14 @@ function ChatClient({ roomId }: { roomId: string }) {
 
         const handleRegister = () => {
           socketInstance.emit("register", {
-            publicKey: publicKeyString, // Use the string version
+            publicKey: publicKeyString,
             roomId: roomId,
           });
         };
 
         socketInstance.on("connect", () => {
           setConnectionStatus("Connected");
-          handleRegister(); // Register after connection
+          handleRegister();
         });
 
         socketInstance.on("room_full", () => {
@@ -95,7 +94,6 @@ function ChatClient({ roomId }: { roomId: string }) {
           setConnectionStatus(`Error: ${err.message}`);
         });
 
-        // Update message sender check to use the public key string
         socketInstance.on(
           "room message",
           async (data: {
@@ -183,7 +181,6 @@ function ChatClient({ roomId }: { roomId: string }) {
     if (!message.trim() || !socket || !peerPublicKey) return;
 
     try {
-      // Sanitize message before encryption
       const sanitizedMessage = DOMPurify.sanitize(message.trim());
 
       const peerKeyData = Uint8Array.from(atob(peerPublicKey), (c) =>
@@ -284,7 +281,6 @@ function ChatClient({ roomId }: { roomId: string }) {
             </div>
           </div>
 
-          {/* Scrollable Message Area */}
           <div className="flex-1 overflow-auto p-4">
             <AnimatePresence initial={false}>
               <div className="space-y-4">
@@ -350,7 +346,6 @@ function ChatClient({ roomId }: { roomId: string }) {
             </AnimatePresence>
           </div>
 
-          {/* Fixed Footer */}
           <div className="bg-card border-t sticky bottom-0 z-10 p-4 shadow-md">
             <div className="flex gap-3">
               <Input

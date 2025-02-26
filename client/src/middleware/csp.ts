@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server'
+import { NextResponse } from "next/server";
 
-export function middleware() {
-  const response = NextResponse.next()
+export function csp() {
+  const response = NextResponse.next();
 
   const cspHeader = `
     default-src 'self';
@@ -15,12 +15,14 @@ export function middleware() {
     frame-ancestors 'none';
     connect-src 'self' ${process.env.NEXT_PUBLIC_BACKEND_URL} wss://*.onrender.com https://*.ipify.org;
     upgrade-insecure-requests;
-  `.replace(/\s{2,}/g, ' ').trim()
+  `
+    .replace(/\s{2,}/g, " ")
+    .trim();
 
-  response.headers.set('Content-Security-Policy', cspHeader)
-  return response
+  response.headers.set("Content-Security-Policy", cspHeader);
+  return response;
 }
 
 export const config = {
-  matcher: '/:path*',
-}
+  matcher: "/:path*",
+};
