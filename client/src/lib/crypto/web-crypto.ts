@@ -162,12 +162,12 @@ export const generateAndStoreKeys = async (): Promise<KeyPair> => {
 
 export const getKeysFromStorage = async (): Promise<KeyPair | null> => {
   try {
-    const keyDataString = sessionStorage.getItem("keyedin_keys");
+    const keyDataString = sessionStorage.getItem("privyUsrKeys");
     if (!keyDataString) return null;
 
     const keyData: StoredKeyData = JSON.parse(keyDataString);
     if (Date.now() - keyData.timestamp > 60 * 60 * 1000) {
-      sessionStorage.removeItem("keyedin_keys");
+      sessionStorage.removeItem("privyUsrKeys");
       if (typeof window !== 'undefined') {
         window.location.href = '/';
       }
@@ -190,7 +190,7 @@ export const getKeysFromStorage = async (): Promise<KeyPair | null> => {
     return { privateKey, publicKey };
   } catch (error) {
     console.error("Key retrieval error:", error);
-    sessionStorage.removeItem("keyedin_keys");
+    sessionStorage.removeItem("privyUsrKeys");
     return null;
   }
 };
@@ -203,7 +203,7 @@ export const checkAndRotateKeys = async (): Promise<KeyPair> => {
   return existingKeys;
 };
 
-export const cleanupKeys = () => sessionStorage.removeItem("keyedin_keys");
+export const cleanupKeys = () => sessionStorage.removeItem("privyUsrKeys");
 
 const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
   try {
