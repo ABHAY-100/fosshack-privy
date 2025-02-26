@@ -11,6 +11,7 @@ import { io, Socket } from "socket.io-client";
 import Image from "next/image";
 import User1 from "../../../../public/user_1.jpg";
 import User2 from "../../../../public/user_2.jpg";
+import DOMPurify from "dompurify";
 
 import {
   encryptMessage,
@@ -48,7 +49,7 @@ function ChatClient({ roomId }: { roomId: string }) {
 
         // Export the public key to string format first
         const publicKeyString = await exportPublicKey(keys.publicKey);
-        
+
         if (!publicKeyString || !keys.privateKey) {
           toast.error("Failed to initialize encryption keys");
           router.push("/join-room");
@@ -58,7 +59,7 @@ function ChatClient({ roomId }: { roomId: string }) {
         const socketInstance = io(process.env.NEXT_PUBLIC_BACKEND_URL, {
           auth: {
             publicKey: publicKeyString, // Use the string version
-            roomId: roomId
+            roomId: roomId,
           },
           reconnectionAttempts: 3,
           timeout: 5000,
@@ -67,7 +68,7 @@ function ChatClient({ roomId }: { roomId: string }) {
         const handleRegister = () => {
           socketInstance.emit("register", {
             publicKey: publicKeyString, // Use the string version
-            roomId: roomId
+            roomId: roomId,
           });
         };
 
@@ -118,7 +119,8 @@ function ChatClient({ roomId }: { roomId: string }) {
                   id: data.id,
                   text: decryptedMessage,
                   encryptedText: data.message,
-                  sender: data.from === myKeys.publicKeyString ? "user" : "other",
+                  sender:
+                    data.from === myKeys.publicKeyString ? "user" : "other",
                   timestamp: data.timestamp,
                 },
               ]);
@@ -181,6 +183,9 @@ function ChatClient({ roomId }: { roomId: string }) {
     if (!message.trim() || !socket || !peerPublicKey) return;
 
     try {
+      // Sanitize message before encryption
+      const sanitizedMessage = DOMPurify.sanitize(message.trim());
+
       const peerKeyData = Uint8Array.from(atob(peerPublicKey), (c) =>
         c.charCodeAt(0)
       );
@@ -192,7 +197,7 @@ function ChatClient({ roomId }: { roomId: string }) {
         ["encrypt"]
       );
 
-      const encryptedMessage = await encryptMessage(message, peerKey);
+      const encryptedMessage = await encryptMessage(sanitizedMessage, peerKey);
       const tempId = `${socket.id}-${Date.now()}`;
 
       setMessages((prev) => [
@@ -323,7 +328,12 @@ function ChatClient({ roomId }: { roomId: string }) {
                             : "bg-white/[0.1] text-white"
                         }`}
                       >
-                        <p className="font-semibold">{msg.text}</p>
+                        <p
+                          className="font-semibold"
+                          dangerouslySetInnerHTML={{
+                            __html: DOMPurify.sanitize(msg.text),
+                          }}
+                        ></p>
                         <p
                           className={`text-xs ${
                             msg.sender === "user"
@@ -374,4 +384,3 @@ export default function ChatPage({
   const { roomId } = use(params);
   return <ChatClient roomId={roomId} />;
 }
-
