@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { generateAndStoreKeys } from "@/lib/cryptoUtils";
+import { generateAndStoreKeys } from "@/lib/crypto/web-crypto";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {

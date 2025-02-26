@@ -16,7 +16,9 @@ import {
   encryptMessage,
   decryptMessage,
   getKeysFromStorage,
-} from "@/lib/cryptoUtils";
+  generateAndStoreKeys,
+  exportPublicKey,
+} from "@/lib/crypto/web-crypto";
 import { toast } from "sonner";
 
 type Message = {
@@ -32,151 +34,147 @@ function ChatClient({ roomId }: { roomId: string }) {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
-  const [peerPublicKey, setPeerPublicKey] = useState(
-    sessionStorage.getItem(`peerKey-${roomId}`) || ""
-  );
+  const [peerPublicKey, setPeerPublicKey] = useState("");
   const [connectionStatus, setConnectionStatus] = useState("Connecting...");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const storedKey = sessionStorage.getItem("keyedin_publickey");
-    if (!storedKey?.trim()) {
-      router.push("/");
-      toast.error("User not authorized");
-      return;
-    }
+    const initializeRoom = async () => {
+      try {
+        let keys = await getKeysFromStorage();
+        if (!keys) {
+          keys = await generateAndStoreKeys();
+        }
 
-    if (!roomId?.trim()) {
-      toast.error("Room not loaded");
-      router.push("/");
-      return;
-    }
+        // Export the public key to string format first
+        const publicKeyString = await exportPublicKey(keys.publicKey);
+        
+        if (!publicKeyString || !keys.privateKey) {
+          toast.error("Failed to initialize encryption keys");
+          router.push("/join-room");
+          return;
+        }
 
-    const socketInstance = io(process.env.NEXT_PUBLIC_BACKEND_URL, {
-      auth: {
-        publicKey: storedKey,
-        roomId: roomId,
-      },
-      reconnectionAttempts: 3,
-      timeout: 5000,
-    });
+        const socketInstance = io(process.env.NEXT_PUBLIC_BACKEND_URL, {
+          auth: {
+            publicKey: publicKeyString, // Use the string version
+            roomId: roomId
+          },
+          reconnectionAttempts: 3,
+          timeout: 5000,
+        });
 
-    const handleRegister = () => {
-      socketInstance.emit(
-        "register",
-        {
-          publicKey: storedKey,
-          roomId: roomId,
-        },
-        (response: { status: string }) => {
-          if (response?.status !== "success") {
-            toast.error("Registration failed");
+        const handleRegister = () => {
+          socketInstance.emit("register", {
+            publicKey: publicKeyString, // Use the string version
+            roomId: roomId
+          });
+        };
+
+        socketInstance.on("connect", () => {
+          setConnectionStatus("Connected");
+          handleRegister(); // Register after connection
+        });
+
+        socketInstance.on("room_full", () => {
+          router.push("/");
+          toast.error("Room is full");
+        });
+
+        socketInstance.on("disconnect", (reason) => {
+          setConnectionStatus("Disconnected");
+          sessionStorage.removeItem(`peerKey-${roomId}`);
+          if (reason === "io server disconnect") {
+            router.push("/");
           }
-        }
-      );
+        });
+
+        socketInstance.on("connect_error", (err) => {
+          toast.error("Connection error");
+          setConnectionStatus(`Error: ${err.message}`);
+        });
+
+        // Update message sender check to use the public key string
+        socketInstance.on(
+          "room message",
+          async (data: {
+            id: string;
+            message: string;
+            from: string;
+            timestamp: number;
+          }) => {
+            try {
+              const myKeys = await getKeysFromStorage();
+              if (!myKeys) throw new Error("No keys found");
+
+              const decryptedMessage = await decryptMessage(
+                data.message,
+                myKeys.privateKey
+              );
+
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: data.id,
+                  text: decryptedMessage,
+                  encryptedText: data.message,
+                  sender: data.from === myKeys.publicKeyString ? "user" : "other",
+                  timestamp: data.timestamp,
+                },
+              ]);
+            } catch (error: unknown) {
+              toast.error(String(error));
+            }
+          }
+        );
+
+        socketInstance.on("peers list", ({ peers }: { peers: string[] }) => {
+          if (peers.length > 0) {
+            const existingPeerKey = peers[0];
+            sessionStorage.setItem(`peerKey-${roomId}`, existingPeerKey);
+            setPeerPublicKey(existingPeerKey);
+          }
+        });
+
+        socketInstance.on("peer connected", ({ peerKey }) => {
+          sessionStorage.setItem(`peerKey-${roomId}`, peerKey);
+          setPeerPublicKey(peerKey);
+        });
+
+        socketInstance.on("peer disconnected", () => {
+          sessionStorage.removeItem(`peerKey-${roomId}`);
+          setPeerPublicKey("");
+        });
+
+        socketInstance.on("error", (error) => {
+          console.error("Socket error:", error);
+          if (error.code === "INVALID_REGISTRATION") {
+            toast.error(error.code);
+            router.push("/");
+          }
+
+          if (error.code === "ROOM_FULL") {
+            router.push("/");
+            toast.error("Room Full");
+          } else {
+            toast.error(error.message);
+          }
+        });
+
+        setSocket(socketInstance);
+
+        return () => {
+          sessionStorage.removeItem(`peerKey-${roomId}`);
+          socketInstance.disconnect();
+        };
+      } catch (error) {
+        console.error("Room initialization failed:", error);
+        toast.error("Failed to establish secure connection");
+        router.push("/join-room");
+      }
     };
 
-    socketInstance.on("connect", () => {
-      setConnectionStatus("Connected");
-    });
-
-    socketInstance.on("room_full", () => {
-      router.push("/");
-      toast.error("Room is full");
-    });
-
-    socketInstance.on("disconnect", (reason) => {
-      setConnectionStatus("Disconnected");
-      sessionStorage.removeItem(`peerKey-${roomId}`);
-      if (reason === "io server disconnect") {
-        router.push("/");
-      }
-    });
-
-    socketInstance.on("connect_error", (err) => {
-      toast.error("Connection error");
-      setConnectionStatus(`Error: ${err.message}`);
-    });
-
-    socketInstance.on(
-      "room message",
-      async (data: {
-        id: string;
-        message: string;
-        from: string;
-        timestamp: number;
-      }) => {
-        try {
-          const myKeys = await getKeysFromStorage();
-          if (!myKeys) throw new Error("No keys found");
-
-          const decryptedMessage = await decryptMessage(
-            data.message,
-            myKeys.privateKey
-          );
-
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: data.id,
-              text: decryptedMessage,
-              encryptedText: data.message,
-              sender: data.from === storedKey ? "user" : "other",
-              timestamp: data.timestamp,
-            },
-          ]);
-        } catch (error: unknown) {
-          toast.error(String(error));
-        }
-      }
-    );
-
-    socketInstance.on("peers list", ({ peers }: { peers: string[] }) => {
-      if (peers.length > 0) {
-        const existingPeerKey = peers[0]; // Assuming 1:1 chat
-        sessionStorage.setItem(`peerKey-${roomId}`, existingPeerKey);
-        setPeerPublicKey(existingPeerKey);
-      }
-    });
-
-    socketInstance.on("peer connected", ({ peerKey }) => {
-      sessionStorage.setItem(`peerKey-${roomId}`, peerKey);
-      setPeerPublicKey(peerKey);
-    });
-
-    socketInstance.on("peer disconnected", () => {
-      sessionStorage.removeItem(`peerKey-${roomId}`);
-      setPeerPublicKey("");
-    });
-
-    socketInstance.on("error", (error) => {
-      console.error("Socket error:", error);
-      if (error.code === "INVALID_REGISTRATION") {
-        toast.error(error.code);
-        router.push("/");
-      }
-
-      if (error.code === "ROOM_FULL") {
-        router.push("/");
-        toast.error("Room Full");
-      } else {
-        toast.error(error.message);
-      }
-    });
-
-    if (socketInstance.connected) {
-      handleRegister();
-    } else {
-      socketInstance.on("connect", handleRegister);
-    }
-
-    setSocket(socketInstance);
-
-    return () => {
-      sessionStorage.removeItem(`peerKey-${roomId}`);
-      socketInstance.off("connect", handleRegister);
-      socketInstance.disconnect();
-    };
+    initializeRoom();
   }, [roomId, router]);
 
   const handleSend = async () => {

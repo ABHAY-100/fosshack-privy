@@ -21,6 +21,7 @@ export default function CreateRoomPage() {
   const [copying, setCopying] = useState(false);
 
   useEffect(() => {
+    // Simply generate and set the room code, no storage needed
     setRoomCode(Math.floor(100000 + Math.random() * 900000).toString());
   }, []);
 

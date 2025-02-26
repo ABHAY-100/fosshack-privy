@@ -14,6 +14,8 @@ import { Input } from "@/components/ui/input";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { generateAndStoreKeys } from "@/lib/crypto/web-crypto";
+import { toast } from "sonner";
 
 export default function JoinRoomPage() {
   const router = useRouter();
@@ -22,6 +24,23 @@ export default function JoinRoomPage() {
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, "").slice(0, 6);
     setCode(value);
+  };
+
+  const handleJoin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!code.trim()) {
+      toast.error("Please enter a room ID");
+      return;
+    }
+
+    try {
+      // Generate keys before joining room
+      await generateAndStoreKeys();
+      router.push(`/chat/${code}`);
+    } catch (error) {
+      console.error("Failed to setup encryption:", error);
+      toast.error("Failed to setup secure connection");
+    }
   };
 
   return (
@@ -107,7 +126,7 @@ export default function JoinRoomPage() {
                 transition={{ duration: 0.3 }}
               >
                 <Button
-                  onClick={() => router.push(`/chat/${code}`)}
+                  onClick={handleJoin}
                   className="w-full lowercase text-xl font-semibold py-7 rounded-none mt-2"
                   size="lg"
                 >
