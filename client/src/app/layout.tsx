@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "sonner";
+import { Analytics } from "@vercel/analytics/react"
 
 export const metadata: Metadata = {
   title: "Privy - Safe & Anonymous Chat Platform",
@@ -40,6 +41,7 @@ export default function RootLayout({
       <body className={`antialiased`}>
         {children}
         <Toaster />
+        <Analytics/>
       </body>
     </html>
   );
