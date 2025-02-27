@@ -1,6 +1,7 @@
 import { KeyPair, StoredKeyData } from "../../types/crypto";
 import { encryptWithFingerprint, decryptWithFingerprint } from "./crypto-js";
 import { CHUNK_SIZE, CHUNK_SEPARATOR } from "../constants";
+import { toast } from "react-hot-toast";
 
 export const generateKeyPair = async () => {
   try {
@@ -166,8 +167,9 @@ export const getKeysFromStorage = async (): Promise<KeyPair | null> => {
     if (!keyDataString) return null;
 
     const keyData: StoredKeyData = JSON.parse(keyDataString);
-    if (Date.now() - keyData.timestamp > 60 * 60 * 1000) {
+    if (Date.now() - keyData.timestamp > 30 * 60 * 1000) {
       sessionStorage.removeItem("privyUsrKeys");
+      toast.error("Session expired. New keys generated.");
       if (typeof window !== "undefined") {
         window.location.href = "/";
       }
@@ -241,7 +243,36 @@ const initializeKeys = async () => {
   }
 };
 
+const INACTIVITY_TIMEOUT = 5 * 60 * 1000;
+let inactivityTimer: NodeJS.Timeout;
+
+const resetInactivityTimer = () => {
+  if (inactivityTimer) clearTimeout(inactivityTimer);
+  inactivityTimer = setTimeout(() => {
+    cleanupKeys();
+    toast.error("Session ended due to 5 minutes of inactivity. New keys generated.");
+    if (typeof window !== "undefined") {
+      window.location.href = "/";
+    }
+  }, INACTIVITY_TIMEOUT);
+};
+
+const setupInactivityDetection = () => {
+  ["mousedown", "mousemove", "keypress", "scroll", "touchstart"].forEach(
+    (eventName) => {
+      document.addEventListener(eventName, resetInactivityTimer);
+    }
+  );
+  resetInactivityTimer();
+};
+
 if (typeof window !== "undefined") {
-  window.addEventListener("load", initializeKeys);
-  window.addEventListener("unload", cleanupKeys);
+  window.addEventListener("load", () => {
+    initializeKeys();
+    setupInactivityDetection();
+  });
+  window.addEventListener("unload", () => {
+    cleanupKeys();
+    if (inactivityTimer) clearTimeout(inactivityTimer);
+  });
 }
