@@ -9,10 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { io, Socket } from "socket.io-client";
 import Image from "next/image";
-import User1 from "../../../../public/user_1.jpg";
-import User2 from "../../../../public/user_2.jpg";
 import DOMPurify from "dompurify";
-
 import {
   encryptMessage,
   decryptMessage,
@@ -21,14 +18,10 @@ import {
   exportPublicKey,
 } from "@/lib/crypto/web-crypto";
 import { toast } from "sonner";
+import { Message } from "@/types/chat";
 
-type Message = {
-  id: string;
-  text: string;
-  encryptedText?: string;
-  sender: "user" | "other";
-  timestamp: number;
-};
+import User1 from "@/assets/user_1.jpg";
+import User2 from "@/assets/user_2.jpg";
 
 function ChatClient({ roomId }: { roomId: string }) {
   const router = useRouter();
@@ -51,7 +44,7 @@ function ChatClient({ roomId }: { roomId: string }) {
 
         if (!publicKeyString || !keys.privateKey) {
           toast.error("Failed to initialize encryption keys");
-          router.push("/join-room");
+          router.push("/");
           return;
         }
 
@@ -274,13 +267,14 @@ function ChatClient({ roomId }: { roomId: string }) {
                 <div className="hidden font-medium px-3 text-sm tracking-wide sm:flex items-center bg-white/5 py-2">
                   status: {connectionStatus}
                 </div>
-                <p className="hidden font-medium px-3 text-sm tracking-wide sm:flex items-center bg-white/5 py-2">
+                <div className="hidden font-medium px-3 text-sm tracking-wide sm:flex items-center bg-white/5 py-2">
                   room id: {roomId}
-                </p>
+                </div>
               </div>
             </div>
           </div>
 
+          {/* Chat Messages */}
           <div className="flex-1 overflow-auto p-4">
             <AnimatePresence initial={false}>
               <div className="space-y-4">
@@ -346,6 +340,7 @@ function ChatClient({ roomId }: { roomId: string }) {
             </AnimatePresence>
           </div>
 
+          {/* Fixed Footer */}
           <div className="bg-card border-t sticky bottom-0 z-10 p-4 shadow-md">
             <div className="flex gap-3">
               <Input

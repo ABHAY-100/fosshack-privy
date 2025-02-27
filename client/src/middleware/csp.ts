@@ -13,7 +13,7 @@ export function csp() {
     base-uri 'self';
     form-action 'self';
     frame-ancestors 'none';
-    connect-src 'self' ${process.env.NEXT_PUBLIC_BACKEND_URL} wss://*.onrender.com https://api.ipify.org;
+    connect-src 'self' ${process.env.NEXT_PUBLIC_BACKEND_URL} wss://*.onrender.com;
     upgrade-insecure-requests;
 `
     .replace(/\s{2,}/g, " ")

@@ -1,24 +1,10 @@
 import CryptoJS from "crypto-js";
 
-const getIPAddress = async () => {
-  try {
-    const response = await fetch("https://api64.ipify.org?format=json");
-    const data = await response.json();
-    return data.ip;
-  } catch (error) {
-    console.error("Error fetching IP:", error);
-    return "";
-  }
-};
-
 const generateBrowserFingerprint = async () => {
-  const ip = await getIPAddress();
   const components = [
     navigator.userAgent,
     navigator.language,
     navigator.hardwareConcurrency || "",
-    window.location.hostname || "",
-    ip,
     (function () {
       try {
         const canvas = document.createElement("canvas");
@@ -26,7 +12,7 @@ const generateBrowserFingerprint = async () => {
         if (ctx) {
           ctx.textBaseline = "top";
           ctx.font = "14px 'Arial'";
-          ctx.fillText("Fingerprint Test", 2, 2);
+          ctx.fillText("Your Device Fingerprint", 2, 2);
           return canvas.toDataURL();
         }
       } catch {

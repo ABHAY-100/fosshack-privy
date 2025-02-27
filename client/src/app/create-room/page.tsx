@@ -21,14 +21,13 @@ export default function CreateRoomPage() {
   const [copying, setCopying] = useState(false);
 
   useEffect(() => {
-    // Simply generate and set the room code, no storage needed
     setRoomCode(Math.floor(100000 + Math.random() * 900000).toString());
   }, []);
 
   const handleCopy = async () => {
     setCopying(true);
     await navigator.clipboard.writeText(roomCode);
-    toast.success("Room code copied to clipboard!");
+    toast.success("Room code copied!");
     setCopying(false);
   };
 
@@ -36,11 +35,22 @@ export default function CreateRoomPage() {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "Join My Chat Room",
-          text: `Use this code to join my chat: ${roomCode}\n https://privy-client.vercel.app`,
+          title: "Join me on Privy!",
+          text: `${process.env.NEXT_PUBLIC_FRONTEND_URL}\n\nHop in! Use this code to join my secure chat: ${roomCode}`,
         });
       } catch (err) {
-        toast.error(`Couldn't share room code : ${err}`);
+        console.error(err);
+        toast.error("Sharing failed. Try copying instead.");
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(
+          `${process.env.NEXT_PUBLIC_FRONTEND_URL}\n\nUse this code to join my chat: ${roomCode}`
+        );
+        toast.success("Copied! Share it manually.");
+      } catch (err) {
+        console.error(err);
+        toast.error("Copy failed. Try again.");
       }
     }
   };
@@ -65,10 +75,10 @@ export default function CreateRoomPage() {
             </Button>
             <div className="flex flex-col items-center gap-[8px]">
               <CardTitle className="text-center text-3xl lowercase">
-                Room Created
+                room created
               </CardTitle>
               <CardDescription className="text-center text-sm text-muted-foreground lowercase">
-                Scan the QR or share the code—your call.
+                scan the qr or share the code—your call.
               </CardDescription>
             </div>
           </CardHeader>
@@ -80,7 +90,7 @@ export default function CreateRoomPage() {
               className="aspect-square bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center rounded-none border-2 border-dashed border-primary/20 w-40 mx-auto"
             >
               <QRCodeSVG
-                value={`https://privy-client.vercel.app`}
+                value={`${process.env.NEXT_PUBLIC_FRONTEND_URL}/chat/${roomCode}`}
                 size={128}
                 className="w-full h-full border-none rounded-none"
               />
@@ -119,7 +129,7 @@ export default function CreateRoomPage() {
                   disabled={copying}
                 >
                   <Copy className="w-4 h-4 mr-2" />
-                  Copy Code
+                  copy code
                 </Button>
                 <Button
                   variant="outline"
@@ -127,7 +137,7 @@ export default function CreateRoomPage() {
                   onClick={handleShare}
                 >
                   <Share2 className="w-4 h-4 mr-2" />
-                  Share
+                  share
                 </Button>
               </div>
             </motion.div>
@@ -142,7 +152,7 @@ export default function CreateRoomPage() {
                 className="w-full lowercase text-xl font-semibold py-7 rounded-none mt-2"
                 size="lg"
               >
-                Continue to Chat
+                continue to chat
               </Button>
             </motion.div>
           </CardContent>

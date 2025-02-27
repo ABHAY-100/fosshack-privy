@@ -14,7 +14,6 @@ import { Input } from "@/components/ui/input";
 import { ArrowLeft } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { generateAndStoreKeys } from "@/lib/crypto/web-crypto";
 import { toast } from "sonner";
 
 export default function JoinRoomPage() {
@@ -29,18 +28,11 @@ export default function JoinRoomPage() {
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!code.trim()) {
-      toast.error("Please enter a room ID");
+      toast.error("Room ID is required!");
       return;
     }
-
-    try {
-      // Generate keys before joining room
-      await generateAndStoreKeys();
-      router.push(`/chat/${code}`);
-    } catch (error) {
-      console.error("Failed to setup encryption:", error);
-      toast.error("Failed to setup secure connection");
-    }
+    
+    router.push(`/chat/${code}`);
   };
 
   return (
@@ -63,10 +55,10 @@ export default function JoinRoomPage() {
             </Button>
             <div className="flex flex-col items-center gap-[8px]">
               <CardTitle className="text-center text-3xl lowercase">
-                Join Room
+                join room
               </CardTitle>
               <CardDescription className="text-center text-md text-muted-foreground lowercase">
-                Got a code? Drop it in and you’re in.
+                got a code? drop it in and you’re in.
               </CardDescription>
             </div>
           </CardHeader>
@@ -130,7 +122,7 @@ export default function JoinRoomPage() {
                   className="w-full lowercase text-xl font-semibold py-7 rounded-none mt-2"
                   size="lg"
                 >
-                  Step in and chat securely
+                  step in and chat securely
                 </Button>
               </motion.div>
             </motion.div>

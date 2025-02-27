@@ -1,8 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
-import { generateAndStoreKeys } from "@/lib/crypto/web-crypto";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,24 +11,9 @@ import {
 import Link from "next/link";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import PRIVY_LOGO from "../../public/privy_logo.svg";
+import LOGO from "../../public/privy.svg";
 
 export default function HomePage() {
-  useEffect(() => {
-    const initKeys = async () => {
-      try {
-        await generateAndStoreKeys();
-      } catch (error) {
-        console.error("Failed to generate keys:", error);
-        toast.error(
-          "Failed to initialize encryption. Please refresh the page."
-        );
-      }
-    };
-
-    initKeys();
-  }, []);
-
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-black from-background to-muted py-[120px]">
       <motion.div
@@ -42,7 +24,7 @@ export default function HomePage() {
       >
         <Card className="border-2 pt-[12px] rounded-none border-dashed">
           <CardHeader className="flex flex-col items-center gap-[10px]">
-            <Image src={PRIVY_LOGO} alt="Privy Logo" />
+            <Image src={LOGO} alt="Privy Logo" />
             <div className="flex flex-col items-center gap-[8px]">
               <CardTitle className="text-center text-3xl font-semibold lowercase">
                 welcome to privy
@@ -65,7 +47,7 @@ export default function HomePage() {
                     className="w-full text-lg font-semibold py-7 rounded-none lowercase text-white bg-transparent border-2 border-white/[0.1] border-dashed hover:text-black"
                     size="lg"
                   >
-                    <span>Start a secure chat</span>
+                    <span>start a secure chat</span>
                   </Button>
                 </Link>
               </motion.div>
@@ -80,7 +62,7 @@ export default function HomePage() {
                     className="w-full text-lg font-semibold py-7 rounded-none lowercase text-white bg-transparent border-2 border-white/[0.1] border-dashed hover:text-black hover:bg-white"
                     size="lg"
                   >
-                    <span>Enter with a room code</span>
+                    <span>enter with a room code</span>
                   </Button>
                 </Link>
               </motion.div>
