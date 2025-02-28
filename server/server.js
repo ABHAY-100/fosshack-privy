@@ -36,7 +36,6 @@ const io = new Server(httpServer, {
         skipMiddlewares: true,
     },
     maxHttpBufferSize: 32 * 1024, // 10 KB
-    transports: ['websocket'],
     pingInterval: 10000,
     pingTimeout: 10000,
 });

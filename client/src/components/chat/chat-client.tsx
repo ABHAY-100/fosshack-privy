@@ -53,7 +53,6 @@ export default function ChatClient() {
           },
           reconnectionAttempts: 3,
           timeout: 5000,
-          transports: ["websocket"]
         });
 
         const handleRegister = () => {
