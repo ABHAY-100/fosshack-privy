@@ -37,7 +37,7 @@ const io = new Server(httpServer, {
 });
 
 io.use((socket, next) => {
-    const clientIp = socket.handshake.address; // Get client IP
+    const clientIp = socket.handshake.headers['x-forwarded-for'] || socket.handshake.address; // Get client IP
     const connectionCount = ipConnectionCount.get(clientIp) || 0;
   
     if (connectionCount >= MAX_CONNECTIONS_PER_IP) {
@@ -190,3 +190,4 @@ try {
 httpServer.listen(5000, () => {
     console.log("Server running on port 5000");
 });
+
