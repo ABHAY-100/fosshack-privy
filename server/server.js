@@ -23,21 +23,21 @@ app.use("/", apiLimiter, router)
 const httpServer = createServer(app);
 
 const ipConnectionCount = new Map();
-const MAX_CONNECTIONS_PER_IP = 5;
+const MAX_CONNECTIONS_PER_IP = 8;
 
 const io = new Server(httpServer, {
     cors: {
-        origin: "https://privy.abhayyy.tech",
+        origin: "https://privy.abhayyy.tech/",
         methods: ["GET", "POST"],
     },
     connectionStateRecovery: {
         maxDisconnectionDuration: 2 * 60 * 1000,
         skipMiddlewares: true,
-    },
-    maxHttpBufferSize: 1e5,
+        maxHttpBufferSize: 1e5,
     transports: ['websocket'], 
      pingInterval: 10000,     
-     pingTimeout: 10000,        
+     pingTimeout: 10000,    
+    }
 });
 
 io.use((socket, next) => {
@@ -194,4 +194,3 @@ try {
 httpServer.listen(5000, () => {
     console.log("Server running on port 5000");
 });
-
