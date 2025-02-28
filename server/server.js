@@ -27,13 +27,17 @@ const MAX_CONNECTIONS_PER_IP = 5;
 
 const io = new Server(httpServer, {
     cors: {
-        origin: "*",
+        origin: "https://privy.abhayyy.tech",
         methods: ["GET", "POST"],
     },
     connectionStateRecovery: {
         maxDisconnectionDuration: 2 * 60 * 1000,
         skipMiddlewares: true,
-    }
+    },
+    maxHttpBufferSize: 1e5,
+    transports: ['websocket'], 
+     pingInterval: 10000,     
+     pingTimeout: 10000,        
 });
 
 io.use((socket, next) => {
