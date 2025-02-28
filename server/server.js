@@ -33,12 +33,12 @@ const io = new Server(httpServer, {
     connectionStateRecovery: {
         maxDisconnectionDuration: 2 * 60 * 1000,
         skipMiddlewares: true,
-        maxHttpBufferSize: 1e5,
-    transports: ['websocket'], 
-     pingInterval: 10000,     
-     pingTimeout: 10000,    
-    }
-});
+      },
+      maxHttpBufferSize: 1e5, 
+      transports: ['websocket'], 
+      pingInterval: 10000,      
+      pingTimeout: 10000,        
+    });
 
 io.use((socket, next) => {
     const clientIp = socket.handshake.headers['x-forwarded-for'] || socket.handshake.address; // Get client IP
