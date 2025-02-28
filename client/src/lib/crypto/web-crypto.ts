@@ -1,7 +1,7 @@
 import { KeyPair, StoredKeyData } from "../../types/crypto";
 import { encryptWithFingerprint, decryptWithFingerprint } from "./crypto-js";
 import { CHUNK_SIZE, CHUNK_SEPARATOR } from "../constants";
-import { toast } from "sonner";
+import { toast } from "react-hot-toast";
 
 export const generateKeyPair = async () => {
   try {
