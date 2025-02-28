@@ -19,7 +19,11 @@ const apiLimiter = rateLimit({
   });
 
 app.use("/", apiLimiter, router)
+
 const httpServer = createServer(app);
+
+const ipConnectionCount = new Map();
+const MAX_CONNECTIONS_PER_IP = 5;
 
 const io = new Server(httpServer, {
     cors: {
@@ -32,7 +36,24 @@ const io = new Server(httpServer, {
     }
 });
 
+io.use((socket, next) => {
+    const clientIp = socket.handshake.address; // Get client IP
+    const connectionCount = ipConnectionCount.get(clientIp) || 0;
+  
+    if (connectionCount >= MAX_CONNECTIONS_PER_IP) {
+      console.warn(`IP ${clientIp} exceeded connection limit`);
+      return next(new Error("Connection limit exceeded"));
+    }
 
+    ipConnectionCount.set(clientIp, connectionCount + 1);
+  
+
+    socket.on("disconnect", () => {
+      ipConnectionCount.set(clientIp, (ipConnectionCount.get(clientIp) || 1) - 1);
+    });
+  
+    next();
+  });
 
 const users = new Map(); // socket.id -> { publicKey, roomId }
 const rooms = new Map(); // roomId -> Set of socket IDs
