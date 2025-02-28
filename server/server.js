@@ -3,10 +3,22 @@ const { createServer } = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
 const { router } = require("./route/postRoute");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
 
 const app = express();
+
+app.use(helmet());
 app.use(cors());
-app.use("/", router)
+
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+app.use("/", apiLimiter, router)
 const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
@@ -19,6 +31,8 @@ const io = new Server(httpServer, {
         skipMiddlewares: true,
     }
 });
+
+
 
 const users = new Map(); // socket.id -> { publicKey, roomId }
 const rooms = new Map(); // roomId -> Set of socket IDs
