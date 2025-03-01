@@ -1,4 +1,4 @@
-# <img src="./client/public/privy.svg" width="32"> Privy
+# <img src="./client/public/privy.svg" width="32"> Privy - Securely Ephemeral
 
 <p>
 	<img src="https://i.postimg.cc/4x6TjYWh/privy-mockup.png">
