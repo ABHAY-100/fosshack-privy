@@ -21,17 +21,20 @@ export default function JoinRoomPage() {
   const [code, setCode] = useState("");
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, "").slice(0, 6);
+    const value = e.target.value
+      .toUpperCase() // Convert to uppercase
+      .replace(/[^A-Z0-9]/g, "") // Remove non-alphanumeric characters
+      .slice(0, 8); // Limit to 8 characters
     setCode(value);
   };
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!code.trim()) {
-      toast.error("Room ID is required!");
+    if (!code.trim() || code.length !== 8) {
+      toast.error("Invalid room code!");
       return;
     }
-    
+
     router.push(`/chat/${code}`);
   };
 
@@ -73,7 +76,7 @@ export default function JoinRoomPage() {
                 <div className="text-center space-y-2">
                   <div className="relative">
                     <div className="flex justify-center gap-2">
-                      {Array(6)
+                      {Array(8)
                         .fill(0)
                         .map((_, i) => (
                           <motion.div
@@ -97,8 +100,8 @@ export default function JoinRoomPage() {
                     </div>
                     <Input
                       type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
+                      inputMode="text"
+                      pattern="[A-Z0-9]*"
                       value={code}
                       onChange={handleCodeChange}
                       className="absolute top-0 left-0 w-full h-full opacity-0 cursor-text caret-transparent"
@@ -111,9 +114,9 @@ export default function JoinRoomPage() {
               <motion.div
                 initial={{ opacity: 0, y: 10, display: "none" }}
                 animate={{
-                  opacity: code.length === 6 ? 1 : 0,
-                  y: code.length === 6 ? 0 : 10,
-                  display: code.length === 6 ? "block" : "none",
+                  opacity: code.length === 8 ? 1 : 0,
+                  y: code.length === 8 ? 0 : 10,
+                  display: code.length === 8 ? "block" : "none",
                 }}
                 transition={{ duration: 0.3 }}
               >

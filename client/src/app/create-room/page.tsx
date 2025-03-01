@@ -21,7 +21,12 @@ export default function CreateRoomPage() {
   const [copying, setCopying] = useState(false);
 
   useEffect(() => {
-    setRoomCode(Math.floor(100000 + Math.random() * 900000).toString());
+    const characters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Excludes ambiguous characters
+    let result = "";
+    for (let i = 0; i < 8; i++) { // Increased length to 8 characters
+      result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    setRoomCode(result);
   }, []);
 
   const handleCopy = async () => {
@@ -107,7 +112,7 @@ export default function CreateRoomPage() {
                   room code ⬇️
                 </div>
                 <div className="text-4xl font-mono font-semibold tracking-wider bg-muted rounded-none py-3">
-                  {roomCode.split("").map((digit, i) => (
+                  {roomCode.split("").map((char, i) => (
                     <motion.span
                       key={i}
                       initial={{ opacity: 0, y: 20 }}
@@ -115,7 +120,7 @@ export default function CreateRoomPage() {
                       transition={{ delay: i * 0.1 }}
                       className="inline-block mx-1"
                     >
-                      {digit}
+                      {char}
                     </motion.span>
                   ))}
                 </div>
