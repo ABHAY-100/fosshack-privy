@@ -102,25 +102,21 @@ Privy is where messages go when they don't want to be remembered. We've built an
 
 ## 🚀 Installation
 
+### Full Setup (Client and Server)
+
 ```bash
-# Grab the code
+# Clone the repository
 git clone https://github.com/ABHAY-100/fosshack-privy.git
+cd fosshack-privy
 
-# Head into the project folder
-cd fosshack-privy/client
-
-# Set up dependencies
+# Setup Server
+cd server
 npm install
 
-# Create your config
-cp .env.example .env
-
-# Fire up the dev server
-npm run dev
-
-# Ready for production?
-npm run build
-npm start
+# Setup Client
+cd ../client
+npm install
+cp .env.example .env  # Configure your environment variables
 ```
 
 ## 💻 Usage
@@ -128,23 +124,40 @@ npm start
 ### What You'll Need
 
 - Node.js 16 or newer
-- A modern browser with good crypto support
+- A modern browser with good crypto support (Chrome, Firefox, Edge, Safari)
 
-### Development
+### Running the Application
 
+#### Start the Server
 ```bash
-# Start coding with hot reload
-npm run dev
+# From the server directory
+cd fosshack-privy/server
+npm install  # If not already installed
+nodemon server  # For development with auto-restart
+# OR
+node server.js  # For standard start
+```
+
+#### Start the Client
+```bash
+# From the client directory
+cd fosshack-privy/client
+npm run dev  # Start development server
+
+# For production
+npm run build
+npm start
 ```
 
 ### Using Privy
 
-1. Open Privy in your browser
-2. We'll automatically generate your secret identity
-3. Create a room or join one via URL
-4. Share the room link with your chat partner
-5. Chat away with complete privacy
-6. When you're done, close the tab and everything disappears
+1. Start both server and client using instructions above
+2. Open Privy in your browser (typically at http://localhost:3000)
+3. We'll automatically generate your secret identity
+4. Create a room or join one via URL
+5. Share the room link with your chat partner
+6. Chat away with complete privacy
+7. When you're done, close the tab and everything disappears
 
 ## 🔧 Tech Stack
 
@@ -193,4 +206,4 @@ Privy is MIT Licensed - see the [LICENSE](LICENSE) file for the legal details.
 
 ---
 
-<b>Built at Foss Hack '25 </b>
+<b>Built at Foss Hack '25 💪</b>
