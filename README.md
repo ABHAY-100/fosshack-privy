@@ -1,18 +1,19 @@
-# <img src="./client/public/privy.svg" width="34">&nbsp;Privy
+# <i><b>Privy - Securely Ephemeral</b></i>
 
 <p>
-	<img src="https://i.postimg.cc/4x6TjYWh/privy-mockup.png">
+  <img src="https://i.postimg.cc/4x6TjYWh/privy-mockup.png">
 </p>
 
 <p>
-  <a href=""><img src="https://img.shields.io/github/discussions/ABHAY-100/privy" alt="Discussions"></a>
-  <a href="https://github.com/ABHAY-100/privy/issues"><img src="https://img.shields.io/github/issues/ABHAY-100/privy" alt="Issues"></a>
   <img src="https://img.shields.io/github/last-commit/ABHAY-100/privy.svg">
+  <img src="https://img.shields.io/github/languages/code-size/ABHAY-100/privy.svg">
+  <img src="https://img.shields.io/github/repo-size/ABHAY-100/privy" alt="Repo Size">
+  <a href="https://github.com/ABHAY-100/privy/issues"><img src="https://img.shields.io/github/issues/ABHAY-100/privy" alt="Issues"></a>
   <a href="https://github.com/ABHAY-100/privy/blob/main/LICENSE"><img src="https://img.shields.io/github/license/ABHAY-100/privy" alt="License"></a>
   <a href="https://github.com/ABHAY-100/privy/stargazers"><img src="https://img.shields.io/github/stars/ABHAY-100/privy" alt="Stars"></a>
-  <img src="https://img.shields.io/github/repo-size/ABHAY-100/privy" alt="Repo Size">
-  <a href="https://github.com/ABHAY-100/privy/network/members"><img src="https://img.shields.io/github/forks/ABHAY-100/privy" alt="Forks"></a>
 </p>
+
+
 
 ## 📖 Table of Contents
 
@@ -27,6 +28,8 @@
 - [License](#license)
 - [Security Considerations](#security-considerations)
 
+
+
 ## 🔒 About
 
 Privy is where messages go when they don't want to be remembered. We've built an ephemeral messaging platform that takes privacy seriously - all communications are end-to-end encrypted and vanish completely after your conversation ends.
@@ -36,27 +39,37 @@ Privy is where messages go when they don't want to be remembered. We've built an
 - For sharing sensitive information that shouldn't stick around
 - When you want privacy without complexity
 
+
+
 ## ✨ Key Features
 
-- **Actually Ephemeral**: Messages vanish after your session ends or when you refresh - seriously, they're gone
-- **End-to-End Encryption**: Everything's locked with PGP/RSA encryption that even we can't peek at
-- **Zero Server Storage**: Your private keys stay on your device - where they belong
-- **Smart Session Controls**:
-  - 5 minutes of inactivity? You're logged out
-  - 30 minutes total session time? That's all you get
-  - Fresh encryption keys each time - because reusing keys is like reusing passwords
-- **Just You Two**: Chat rooms are strictly limited to 2 participants
-- **Fair Usage**: Maximum 10 sessions per IP (we want to keep the lights on for everyone)
+- **Truly Ephemeral Communication**:
+  - Messages and data vanish after 30 minutes or on page refresh
+  - Auto-destruction after 5 minutes of inactivity
+  - Fresh encryption keys generated for each session
+
+- **End-to-End Encryption**:
+  - PGP encryption for all message content
+  - Your keys never leave your device
+  - Messages stored encrypted in your browser only
+  - No server-side data storage
+
+- **Private By Design**:
+  - Strictly 2 participants per chat room
+  - Fair usage: maximum 10 sessions per IP address
+  - No message content traces after conversations end
+
+
 
 ## 🛡️ Security Architecture
 
 ### How We Handle Encryption
 
 - **Your Keys, Your Device**: All keys are generated right in your browser
-- **Nothing Leaves Home**: Private keys never leave your device - not even to us
-- **Double-Locked Storage**: Private keys are AES-encrypted before even hitting SessionStorage
+- **Double-Locked Storage**: Private keys are AES-encrypted with browser fingerprint data before storing in SessionStorage
 - **Extra Randomness**: We use parts of your browser fingerprint to strengthen encryption (not for tracking!)
 - **Minimal Sharing**: Only public keys get exchanged between chat participants
+- **Secure Message Storage**: Messages encrypted and stored temporarily in browser's IndexedDB with additional safeguards
 
 ### Browser & Network Protections
 
@@ -64,13 +77,17 @@ Privy is where messages go when they don't want to be remembered. We've built an
 - **Clickjacking Protection**: No one can trick you into clicking things you didn't mean to
 - **HTTPS Everywhere**: HSTS headers keep your connection encrypted
 - **Secure Sockets**: Real-time chat happens over secure WebSocket connections
+- **XSS Prevention**: DOMPurify sanitizes all content to prevent cross-site scripting attacks
+- **Rate Limiting**: API request limits protect against brute force and DoS attacks
 
 ### How Sessions Work
 
-- **Auto-Cleanup**: Sessions self-destruct after 30 minutes or when you step away
+- **Auto-Cleanup**: Sessions self-destruct after 30 minutes or when you step away for 5 minutes
 - **Private Conversations**: Only two people can join a room - no unexpected guests
 - **Clean Slate**: When you're done, all keys and messages are completely wiped
 - **Fair Usage**: Limits on concurrent sessions prevent abuse
+
+
 
 ## 🎬 See Privy in Action
 
@@ -81,14 +98,16 @@ Privy is where messages go when they don't want to be remembered. We've built an
   <p><em>Click to watch the demo video</em></p>
 </div>
 
+
+
 ## 🚀 Installation
 
 ```bash
 # Grab the code
-git clone https://github.com/ABHAY-100/privy.git
+git clone https://github.com/ABHAY-100/fosshack-privy.git
 
 # Head into the project folder
-cd privy
+cd fosshack-privy/client
 
 # Set up dependencies
 npm install
@@ -116,12 +135,6 @@ npm start
 ```bash
 # Start coding with hot reload
 npm run dev
-
-# Run the test suite
-npm test
-
-# Keep your code tidy
-npm run lint
 ```
 
 ### Using Privy
@@ -144,12 +157,12 @@ npm run lint
 
 ## 👥 Team
 
-Privy was built by this crew at FOSS HACK 2025:
+Privy was built by this crew at [FOSS HACK 2025](https://fossunited.org/hack/fosshack25):
 
-- [Abhay Balakrishnan](https://github.com/ABHAY-100) - Leading the charge
-- [Asil Mehaboob](https://github.com/AsilMehaboob) - Backend wizardry
-- [Elvin J Alapatt](https://github.com/Elvin2605) - Frontend craftsmanship
-- [Sreyas B Anand](https://github.com/sreyas-b-anand) - Security architecture
+- [Abhay Balakrishnan](https://github.com/ABHAY-100)
+- [Asil Mehaboob](https://github.com/AsilMehaboob)
+- [Elvin J Alapatt](https://github.com/Elvin2605)
+- [Sreyas B Anand](https://github.com/sreyas-b-anand)
 
 ## 🤝 Contributing
 
@@ -165,7 +178,7 @@ We appreciate code that follows the project's style and includes tests!
 
 ### Found a Security Issue?
 
-Please don't open a public issue. Email us at security@example.com instead, and we'll work with you directly.
+Please don't open a public issue. Email us at [abhaybalakrishnan884@gmail.com](mailto:abhaybalakrishnan884@gmail.com) instead, and we'll work with you directly.
 
 ## 📄 License
 
@@ -180,6 +193,4 @@ Privy is MIT Licensed - see the [LICENSE](LICENSE) file for the legal details.
 
 ---
 
-<p align="center">
-  Created at <strong>FOSS HACK 2025</strong> • Getting better since March 2025
-</p>
+<b>Built at Foss Hack '25 </b>
