@@ -216,4 +216,4 @@ Privy is MIT Licensed - see the [LICENSE](LICENSE) file for the legal details.
 
 ---
 
-<b>Built at Foss Hack '25 💪</b>
+<b>Thank you for your interest in Privy! 🤝</b>
