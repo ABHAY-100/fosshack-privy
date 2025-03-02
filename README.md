@@ -135,10 +135,9 @@ cp .env.example .env  # Configure your environment variables
 ```bash
 # From the server directory
 cd fosshack-privy/server
-npm install  # If not already installed
 nodemon server  # For development with auto-restart
 # OR
-node server.js  # For standard start
+node server  # For standard start
 ```
 
 #### Start the Client
@@ -164,7 +163,7 @@ npm start
 
 ## 🔧 Tech Stack
 
-- **Frontend**: Next.js, TypeScript
+- **Frontend**: Next.js, TypeScript, shadcn/ui
 - **Backend**: Node.js, Express
 - **Real-time Communication**: Socket.io
 - **Client Storage**: IndexedDB, SessionStorage
@@ -194,12 +193,11 @@ We appreciate code that follows the project's style and includes tests!
 
 ### Found a Security Issue?
 
-Please don't open a public issue. Contact us on Discord at `ABHAY#0550` instead, and we'll work with you directly.
+For security concerns, please open a GitHub issue in this repository. We monitor issues regularly and will address your report promptly.
 
 ## 📄 License
 
 Privy is MIT Licensed - see the [LICENSE](LICENSE) file for the legal details.
-
 
 ## ⚠️ Security Considerations
 
