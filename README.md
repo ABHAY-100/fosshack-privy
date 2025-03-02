@@ -162,9 +162,14 @@ npm start
 6. Chat away with complete privacy
 7. When you're done, close the tab and everything disappears
 
-## 🔧 Built With
+## 🔧 Tech Stack
 
-![My Skills](https://skillicons.dev/icons?i=nextjs,js,ts,css,tailwind,nodejs,express)
+- **Frontend**: Next.js, TypeScript
+- **Backend**: Node.js, Express
+- **Real-time Communication**: Socket.io
+- **Client Storage**: IndexedDB, SessionStorage
+- **Styling**: Tailwind CSS
+- **Security**: WebCrypto API, OpenPGP.js for PGP encryption
 
 ## 👥 Team
 
