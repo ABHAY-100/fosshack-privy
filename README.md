@@ -1,4 +1,6 @@
-# <i><b>Privy - Securely Ephemeral</b></i>
+# Privy
+
+<i>Privy is a [Ephemeral](https://medium.com/startupq8/ephemeral-messaging-a-trend-that-wont-disappear-5bb30bf4c95d) messaging platform utilizing [PGP](https://medium.com/@rushikajayasinghe/what-is-pretty-good-privacy-pgp-6327e760587d) for secure, disappearing chats.</i>
 
 <p>
   <img src="https://i.postimg.cc/4x6TjYWh/privy-mockup.png">
@@ -198,12 +200,19 @@ Please don't open a public issue. Email us at [abhaybalakrishnan884@gmail.com](m
 
 Privy is MIT Licensed - see the [LICENSE](LICENSE) file for the legal details.
 
+
 ## ⚠️ Security Considerations
 
-- **Gone Means Gone**: By design, there's no way to recover messages
-- **Modern Browsers Only**: You'll need a browser with proper WebCrypto support
-- **Not Perfect**: While message content is encrypted, connection timing might still reveal metadata
-- **Know Your Risks**: Consider your threat model when using any privacy tool
+- **No Recovery**: Messages are permanently deleted by design - no recovery possible
+- **Technical Requirements**: Requires modern browsers with WebCrypto API support
+- **Privacy Limits**: While messages are encrypted, connection metadata remains visible
+- **User Precautions**:
+  - Consider using a VPN to mask your IP address
+  - Use private browsing mode
+  - Connect only through trusted networks
+  - Ensure your device is secure and up-to-date
+
+Remember to assess your specific threat model before using for highly sensitive communications.
 
 ---
 
