@@ -19,7 +19,7 @@
 
 ## 📖 Table of Contents
 
-- [About](##about)
+- [About](##-about)
 - [Key Features](#key-features)
 - [Security Architecture](##security-architecture)
 - [See Privy in Action](##see-privy-in-action)
