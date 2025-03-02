@@ -53,7 +53,7 @@ Privy is where messages go when they don't want to be remembered. We've built an
 
 - **End-to-End Encryption**:
   - PGP encryption for all message content
-  - Your keys never leave your device
+  - Your private keys never leaves your device
   - Messages stored encrypted in your browser only
   - No server-side data storage
 
