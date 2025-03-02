@@ -17,16 +17,17 @@
 
 ## 📖 Table of Contents
 
-- [About](#about)
+- [About](##about)
 - [Key Features](#key-features)
-- [Security Architecture](#security-architecture)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Tech Stack](#tech-stack)
-- [Team](#team)
-- [Contributing](#contributing)
+- [Security Architecture](##security-architecture)
+- [See Privy in Action](##see-privy-in-action)
+- [Installation](##installation)
+- [Usage](##usage)
+- [Tech Stack](##tech-stack)
+- [Team](##team)
+- [Contributing](##contributing)
 - [License](#license)
-- [Security Considerations](#security-considerations)
+- [Security Considerations](##security-considerations)
 
 
 
