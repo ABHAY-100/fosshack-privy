@@ -19,8 +19,6 @@
 
 ## 📖 Table of Contents
 
-## 📖 Table of Contents
-
 - [About](#-about)
 - [Key Features](#-key-features)
 - [Security Architecture](#️-security-architecture)
@@ -164,18 +162,13 @@ npm start
 6. Chat away with complete privacy
 7. When you're done, close the tab and everything disappears
 
-## 🔧 Tech Stack
+## 🔧 Built With
 
-- **Frontend**: TypeScript (84.9%), React
-- **Backend**: Node.js, Express
-- **Real-time Magic**: Socket.io
-- **Look & Feel**: CSS (3%)
-- **Security**: WebCrypto API, PGP
-- **Auth**: bcrypt where needed
+![My Skills](https://skillicons.dev/icons?i=nextjs,js,ts,css,tailwind,nodejs,express)
 
 ## 👥 Team
 
-Privy was built by this crew at [FOSS HACK 2025](https://fossunited.org/hack/fosshack25):
+Privy was built by this crew at [Foss Hack '25](https://fossunited.org/hack/fosshack25):
 
 - [Abhay Balakrishnan](https://github.com/ABHAY-100)
 - [Asil Mehaboob](https://github.com/AsilMehaboob)
@@ -196,7 +189,7 @@ We appreciate code that follows the project's style and includes tests!
 
 ### Found a Security Issue?
 
-Please don't open a public issue. Email us at [abhaybalakrishnan884@gmail.com](mailto:abhaybalakrishnan884@gmail.com) instead, and we'll work with you directly.
+Please don't open a public issue. Contact us on Discord at `ABHAY#0550` instead, and we'll work with you directly.
 
 ## 📄 License
 
@@ -214,7 +207,7 @@ Privy is MIT Licensed - see the [LICENSE](LICENSE) file for the legal details.
   - Connect only through trusted networks
   - Ensure your device is secure and up-to-date
 
-Remember to assess your specific threat model before using for highly sensitive communications.
+<i>Remember to assess your specific threat model before using for highly sensitive communications.</i>
 
 ---
 
