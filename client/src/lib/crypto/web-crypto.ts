@@ -1,7 +1,8 @@
-import { KeyPair, StoredKeyData } from "../../types/crypto";
-import { encryptWithFingerprint, decryptWithFingerprint } from "./crypto-js";
-import { CHUNK_SIZE, CHUNK_SEPARATOR } from "../constants";
-import { toast } from "sonner";
+import type { KeyPair, StoredKeyData } from "../../types/crypto"
+import { encryptWithFingerprint, decryptWithFingerprint } from "./crypto-js"
+import { CHUNK_SIZE, CHUNK_SEPARATOR } from "../constants"
+import { toast } from "sonner"
+import { generateAESKey, exportAESKey, importAESKey, encryptWithAES, decryptWithAES } from "./aes-crypto"
 
 export const generateKeyPair = async () => {
   try {
@@ -13,34 +14,28 @@ export const generateKeyPair = async () => {
         hash: "SHA-256",
       },
       true,
-      ["encrypt", "decrypt"]
-    );
-    return keyPair;
+      ["encrypt", "decrypt"],
+    )
+    return keyPair
   } catch (error) {
-    console.error("Key generation error:", error);
-    throw new Error("Failed to generate encryption keys");
+    console.error("Key generation error:", error)
+    throw new Error("Failed to generate encryption keys")
   }
-};
+}
 
-export const exportPublicKey = async (
-  publicKey: CryptoKey
-): Promise<string> => {
+export const exportPublicKey = async (publicKey: CryptoKey): Promise<string> => {
   try {
-    const exported = await window.crypto.subtle.exportKey("spki", publicKey);
-    return btoa(String.fromCharCode(...new Uint8Array(exported)));
+    const exported = await window.crypto.subtle.exportKey("spki", publicKey)
+    return btoa(String.fromCharCode(...new Uint8Array(exported)))
   } catch (error) {
-    console.error("Public key export error:", error);
-    throw new Error("Failed to export public key");
+    console.error("Public key export error:", error)
+    throw new Error("Failed to export public key")
   }
-};
+}
 
-export const importPublicKey = async (
-  publicKeyString: string
-): Promise<CryptoKey> => {
+export const importPublicKey = async (publicKeyString: string): Promise<CryptoKey> => {
   try {
-    const keyData = Uint8Array.from(atob(publicKeyString), (c) =>
-      c.charCodeAt(0)
-    );
+    const keyData = Uint8Array.from(atob(publicKeyString), (c) => c.charCodeAt(0))
     return await window.crypto.subtle.importKey(
       "spki",
       keyData,
@@ -49,230 +44,240 @@ export const importPublicKey = async (
         hash: "SHA-256",
       },
       true,
-      ["encrypt"]
-    );
+      ["encrypt"],
+    )
   } catch (error) {
-    console.error("Public key import error:", error);
-    throw new Error("Failed to import public key");
+    console.error("Public key import error:", error)
+    throw new Error("Failed to import public key")
   }
-};
+}
 
-const encryptChunk = async (
-  chunk: string,
-  publicKey: CryptoKey
-): Promise<string> => {
+// Encrypt AES key with RSA public key
+const encryptAESKey = async (aesKeyString: string, publicKey: CryptoKey): Promise<string> => {
   try {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(chunk);
-    const encrypted = await window.crypto.subtle.encrypt(
-      { name: "RSA-OAEP" },
-      publicKey,
-      data
-    );
-    return btoa(String.fromCharCode(...new Uint8Array(encrypted)));
+    const encoder = new TextEncoder()
+    const data = encoder.encode(aesKeyString)
+    const encrypted = await window.crypto.subtle.encrypt({ name: "RSA-OAEP" }, publicKey, data)
+    return btoa(String.fromCharCode(...new Uint8Array(encrypted)))
   } catch (error) {
-    console.error("Chunk encryption error:", error);
-    throw new Error("Failed to encrypt message chunk");
+    console.error("AES key encryption error:", error)
+    throw new Error("Failed to encrypt AES key")
   }
-};
+}
 
-const decryptChunk = async (
-  encryptedChunk: string,
-  privateKey: CryptoKey
-): Promise<string> => {
+// Decrypt AES key with RSA private key
+const decryptAESKey = async (encryptedAESKey: string, privateKey: CryptoKey): Promise<string> => {
   try {
-    const data = Uint8Array.from(atob(encryptedChunk), (c) => c.charCodeAt(0));
-    const decrypted = await window.crypto.subtle.decrypt(
-      { name: "RSA-OAEP" },
-      privateKey,
-      data
-    );
-    const decoder = new TextDecoder();
-    return decoder.decode(decrypted);
+    const data = Uint8Array.from(atob(encryptedAESKey), (c) => c.charCodeAt(0))
+    const decrypted = await window.crypto.subtle.decrypt({ name: "RSA-OAEP" }, privateKey, data)
+    const decoder = new TextDecoder()
+    return decoder.decode(decrypted)
   } catch (error) {
-    console.error("Chunk decryption error:", error);
-    throw new Error("Failed to decrypt message chunk");
+    console.error("AES key decryption error:", error)
+    throw new Error("Failed to decrypt AES key")
   }
-};
+}
 
-export const encryptMessage = async (
-  message: string,
-  publicKey: CryptoKey
-): Promise<string> => {
-  try {
-    const chunks = [];
-    for (let i = 0; i < message.length; i += CHUNK_SIZE) {
-      const chunk = message.slice(i, i + CHUNK_SIZE);
-      const encryptedChunk = await encryptChunk(chunk, publicKey);
-      chunks.push(encryptedChunk);
-    }
-    return chunks.join(CHUNK_SEPARATOR);
-  } catch (error) {
-    console.error("Message encryption error:", error);
-    throw new Error("Failed to encrypt message");
+// Split message into chunks if needed
+const splitIntoChunks = (message: string): string[] => {
+  const chunks = []
+  for (let i = 0; i < message.length; i += CHUNK_SIZE) {
+    const chunk = message.slice(i, i + CHUNK_SIZE)
+    chunks.push(chunk)
   }
-};
+  return chunks
+}
 
-export const decryptMessage = async (
-  encryptedMessage: string,
-  privateKey: CryptoKey
-): Promise<string> => {
+export const encryptMessage = async (message: string, publicKey: CryptoKey): Promise<string> => {
   try {
-    const chunks = encryptedMessage.split(CHUNK_SEPARATOR);
-    const decryptedChunks = await Promise.all(
-      chunks.map((chunk) => decryptChunk(chunk, privateKey))
-    );
-    return decryptedChunks.join("");
+    // Generate a new AES key for this message
+    const aesKey = await generateAESKey()
+    const aesKeyString = await exportAESKey(aesKey)
+
+    // Encrypt the message with AES
+    const { encrypted: encryptedMessage, iv } = await encryptWithAES(message, aesKey)
+
+    // Encrypt the AES key with the recipient's public RSA key
+    const encryptedAESKey = await encryptAESKey(aesKeyString, publicKey)
+
+    // Format: encryptedAESKey|iv|encryptedMessage
+    const payload = JSON.stringify({
+      key: encryptedAESKey,
+      iv: iv,
+      data: encryptedMessage,
+    })
+
+    // If the payload is too large, split it into chunks
+    const chunks = splitIntoChunks(payload)
+    return chunks.join(CHUNK_SEPARATOR)
   } catch (error) {
-    console.error("Message decryption error:", error);
-    throw new Error("Failed to decrypt message");
+    console.error("Message encryption error:", error)
+    throw new Error("Failed to encrypt message")
   }
-};
+}
+
+export const decryptMessage = async (encryptedMessage: string, privateKey: CryptoKey): Promise<string> => {
+  try {
+    // Join chunks if message was split
+    const fullPayload = encryptedMessage.split(CHUNK_SEPARATOR).join("")
+
+    // Parse the payload
+    const { key: encryptedAESKey, iv, data: encryptedData } = JSON.parse(fullPayload)
+
+    // Decrypt the AES key with the private RSA key
+    const aesKeyString = await decryptAESKey(encryptedAESKey, privateKey)
+    const aesKey = await importAESKey(aesKeyString)
+
+    // Decrypt the message with the AES key
+    return await decryptWithAES(encryptedData, iv, aesKey)
+  } catch (error) {
+    console.error("Message decryption error:", error)
+    throw new Error("Failed to decrypt message")
+  }
+}
 
 export const generateAndStoreKeys = async (): Promise<KeyPair> => {
   try {
     if (!window.crypto || !window.crypto.subtle) {
-      throw new Error("Web Crypto API is not supported");
+      throw new Error("Web Crypto API is not supported")
     }
 
-    const keyPair = await generateKeyPair();
-    const publicKeyString = await exportPublicKey(keyPair.publicKey);
-    const privateKeyData = await window.crypto.subtle.exportKey(
-      "pkcs8",
-      keyPair.privateKey
-    );
-    const privateKeyString = arrayBufferToBase64(privateKeyData);
+    const keyPair = await generateKeyPair()
+    const publicKeyString = await exportPublicKey(keyPair.publicKey)
+    const privateKeyData = await window.crypto.subtle.exportKey("pkcs8", keyPair.privateKey)
+    const privateKeyString = arrayBufferToBase64(privateKeyData)
 
     const keyData: StoredKeyData = {
       publicKey: publicKeyString,
       privateKey: await encryptWithFingerprint(privateKeyString),
       timestamp: Date.now(),
-    };
+    }
 
-    sessionStorage.setItem("privyUsrKeys", JSON.stringify(keyData));
+    sessionStorage.setItem("privyUsrKeys", JSON.stringify(keyData))
     return {
       publicKey: keyPair.publicKey,
       privateKey: keyPair.privateKey,
       publicKeyString,
-    };
+    }
   } catch (error) {
-    console.error("Key storage error:", error);
-    throw new Error("Failed to store encryption keys");
+    console.error("Key storage error:", error)
+    throw new Error("Failed to store encryption keys")
   }
-};
+}
 
 export const getKeysFromStorage = async (): Promise<KeyPair | null> => {
   try {
-    const keyDataString = sessionStorage.getItem("privyUsrKeys");
-    if (!keyDataString) return null;
+    const keyDataString = sessionStorage.getItem("privyUsrKeys")
+    if (!keyDataString) return null
 
-    const keyData: StoredKeyData = JSON.parse(keyDataString);
+    const keyData: StoredKeyData = JSON.parse(keyDataString)
     if (Date.now() - keyData.timestamp > 30 * 60 * 1000) {
-      sessionStorage.removeItem("privyUsrKeys");
-      toast.error("Session expired. New keys generated.");
+      sessionStorage.removeItem("privyUsrKeys")
+      toast.error("Session expired. New keys generated.")
       if (typeof window !== "undefined") {
-        window.location.href = "/";
+        window.location.href = "/"
       }
-      return null;
+      return null
     }
 
-    const decryptedPrivateKey = await decryptWithFingerprint(
-      keyData.privateKey
-    );
-    const privateKeyData = base64ToArrayBuffer(decryptedPrivateKey);
+    const decryptedPrivateKey = await decryptWithFingerprint(keyData.privateKey)
+    const privateKeyData = base64ToArrayBuffer(decryptedPrivateKey)
     const privateKey = await window.crypto.subtle.importKey(
       "pkcs8",
       privateKeyData,
       { name: "RSA-OAEP", hash: "SHA-256" },
       true,
-      ["decrypt"]
-    );
+      ["decrypt"],
+    )
 
-    const publicKey = await importPublicKey(keyData.publicKey);
-    return { privateKey, publicKey };
+    const publicKey = await importPublicKey(keyData.publicKey)
+    return {
+      privateKey,
+      publicKey,
+      publicKeyString: keyData.publicKey,
+    }
   } catch (error) {
-    console.error("Key retrieval error:", error);
-    sessionStorage.removeItem("privyUsrKeys");
-    return null;
+    console.error("Key retrieval error:", error)
+    sessionStorage.removeItem("privyUsrKeys")
+    return null
   }
-};
+}
 
 export const checkAndRotateKeys = async (): Promise<KeyPair> => {
-  const existingKeys = await getKeysFromStorage();
+  const existingKeys = await getKeysFromStorage()
   if (!existingKeys) {
-    return await generateAndStoreKeys();
+    return await generateAndStoreKeys()
   }
-  return existingKeys;
-};
+  return existingKeys
+}
 
-export const cleanupKeys = () => sessionStorage.removeItem("privyUsrKeys");
+export const cleanupKeys = () => sessionStorage.removeItem("privyUsrKeys")
 
 const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
   try {
-    const uint8Array = new Uint8Array(buffer);
-    const chunks: string[] = [];
+    const uint8Array = new Uint8Array(buffer)
+    const chunks: string[] = []
     uint8Array.forEach((byte) => {
-      chunks.push(String.fromCharCode(byte));
-    });
-    return btoa(chunks.join(""));
+      chunks.push(String.fromCharCode(byte))
+    })
+    return btoa(chunks.join(""))
   } catch (error) {
-    console.error("Base64 encoding error:", error);
-    throw new Error("Failed to encode message");
+    console.error("Base64 encoding error:", error)
+    throw new Error("Failed to encode message")
   }
-};
+}
 
 const base64ToArrayBuffer = (base64: string): ArrayBuffer => {
   try {
-    const binaryString = atob(base64.trim());
-    const bytes = new Uint8Array(binaryString.length);
+    const binaryString = atob(base64.trim())
+    const bytes = new Uint8Array(binaryString.length)
     for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
+      bytes[i] = binaryString.charCodeAt(i)
     }
-    return bytes.buffer;
+    return bytes.buffer
   } catch (error) {
-    console.error("Base64 decoding error:", error);
-    throw new Error("Failed to decode message");
+    console.error("Base64 decoding error:", error)
+    throw new Error("Failed to decode message")
   }
-};
+}
 
 const initializeKeys = async () => {
   try {
-    await checkAndRotateKeys();
+    await checkAndRotateKeys()
   } catch (error) {
-    console.error("Failed to initialize keys:", error);
+    console.error("Failed to initialize keys:", error)
   }
-};
+}
 
-const INACTIVITY_TIMEOUT = 5 * 60 * 1000;
-let inactivityTimer: NodeJS.Timeout;
+const INACTIVITY_TIMEOUT = 5 * 60 * 1000
+let inactivityTimer: NodeJS.Timeout
 
 const resetInactivityTimer = () => {
-  if (inactivityTimer) clearTimeout(inactivityTimer);
+  if (inactivityTimer) clearTimeout(inactivityTimer)
   inactivityTimer = setTimeout(() => {
-    cleanupKeys();
-    toast.error("Session ended due to 5 minutes of inactivity. New keys generated.");
+    cleanupKeys()
+    toast.error("Session ended due to 5 minutes of inactivity. New keys generated.")
     if (typeof window !== "undefined") {
-      window.location.href = "/";
+      window.location.href = "/"
     }
-  }, INACTIVITY_TIMEOUT);
-};
+  }, INACTIVITY_TIMEOUT)
+}
 
 const setupInactivityDetection = () => {
-  ["mousedown", "mousemove", "keypress", "scroll", "touchstart"].forEach(
-    (eventName) => {
-      document.addEventListener(eventName, resetInactivityTimer);
-    }
-  );
-  resetInactivityTimer();
-};
+  ;["mousedown", "mousemove", "keypress", "scroll", "touchstart"].forEach((eventName) => {
+    document.addEventListener(eventName, resetInactivityTimer)
+  })
+  resetInactivityTimer()
+}
 
 if (typeof window !== "undefined") {
   window.addEventListener("load", () => {
-    initializeKeys();
-    setupInactivityDetection();
-  });
+    initializeKeys()
+    setupInactivityDetection()
+  })
   window.addEventListener("unload", () => {
-    cleanupKeys();
-    if (inactivityTimer) clearTimeout(inactivityTimer);
-  });
+    cleanupKeys()
+    if (inactivityTimer) clearTimeout(inactivityTimer)
+  })
 }
+
