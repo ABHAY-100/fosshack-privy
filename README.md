@@ -72,7 +72,7 @@ Privy is where messages go when they don't want to be remembered. We've built an
 - **Double-Locked Storage**: Private keys are AES-encrypted with browser fingerprint data before storing in SessionStorage
 - **Extra Randomness**: We use parts of your browser fingerprint to strengthen encryption (not for tracking!)
 - **Minimal Sharing**: Only public keys get exchanged between chat participants
-- **Secure Message Storage**: Messages encrypted and stored temporarily in browser's IndexedDB with additional safeguards
+- **Secure Message Storage**: Messages encrypted and stored temporarily in browser with additional safeguards
 
 ### Browser & Network Protections
 
@@ -166,7 +166,7 @@ npm start
 - **Frontend**: Next.js, TypeScript, shadcn/ui
 - **Backend**: Node.js, Express
 - **Real-time Communication**: Socket.io
-- **Client Storage**: IndexedDB, SessionStorage
+- **Client Storage**: SessionStorage
 - **Styling**: Tailwind CSS
 - **Security**: WebCrypto API, Crypto.js for PGP encryption
 
