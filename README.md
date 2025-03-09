@@ -168,7 +168,7 @@ npm start
 - **Real-time Communication**: Socket.io
 - **Client Storage**: SessionStorage
 - **Styling**: Tailwind CSS
-- **Security**: WebCrypto API, Crypto.js for PGP encryption
+- **Security**: WebCrypto API
 
 ## 👥 Team
 
