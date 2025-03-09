@@ -40,11 +40,11 @@ export default function CreateRoomPage() {
         }
         return response.json();
       })
-      .then((data) => {
-
+      .then(() => {
+        // Data is not used, so we omit the parameter
       })
-      .catch((error) => {
-
+      .catch(() => {
+        // Error is not used, so we omit the parameter
       });
   }, []);
 
@@ -62,8 +62,7 @@ export default function CreateRoomPage() {
           title: "Join me on Privy!",
           text: `${process.env.NEXT_PUBLIC_FRONTEND_URL}\n\nHop in! Use this code to join my secure chat: ${roomCode}`,
         });
-      } catch (err) {
-
+      } catch {
         toast.error("Sharing failed. Try copying instead.");
       }
     } else {
@@ -72,8 +71,7 @@ export default function CreateRoomPage() {
           `${process.env.NEXT_PUBLIC_FRONTEND_URL}\n\nUse this code to join my chat: ${roomCode}`
         );
         toast.success("Copied! Share it manually.");
-      } catch (err) {
-
+      } catch {
         toast.error("Copy failed. Try again.");
       }
     }
