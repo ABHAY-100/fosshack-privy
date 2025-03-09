@@ -41,10 +41,10 @@ export default function CreateRoomPage() {
         return response.json();
       })
       .then((data) => {
-        console.log("Room registered:", data);
+
       })
       .catch((error) => {
-        console.error("Failed to register room:", error);
+
       });
   }, []);
 
@@ -63,7 +63,7 @@ export default function CreateRoomPage() {
           text: `${process.env.NEXT_PUBLIC_FRONTEND_URL}\n\nHop in! Use this code to join my secure chat: ${roomCode}`,
         });
       } catch (err) {
-        console.error(err);
+
         toast.error("Sharing failed. Try copying instead.");
       }
     } else {
@@ -73,7 +73,7 @@ export default function CreateRoomPage() {
         );
         toast.success("Copied! Share it manually.");
       } catch (err) {
-        console.error(err);
+
         toast.error("Copy failed. Try again.");
       }
     }
