@@ -1,5 +1,3 @@
-import CryptoJS from "crypto-js";
-
 const generateBrowserFingerprint = async () => {
   const components = [
     navigator.userAgent.substring(4, navigator.userAgent.length - 12), // user agent
@@ -114,21 +112,103 @@ const generateBrowserFingerprint = async () => {
     navigator.hardwareConcurrency || "", // number of logical processors
   ].filter(Boolean);
 
-  return CryptoJS.SHA256(components.join("||")).toString();
+  const encoder = new TextEncoder();
+  const data = encoder.encode(components.join("||"));
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 };
 
 export const encryptWithFingerprint = async (data: string): Promise<string> => {
   const encryptionKey = await generateBrowserFingerprint();
-  return CryptoJS.AES.encrypt(data, encryptionKey).toString();
+
+  const encoder = new TextEncoder();
+  const salt = encoder.encode("static-salt");
+
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(encryptionKey),
+    { name: "PBKDF2" },
+    false,
+    ["deriveKey"]
+  );
+
+  const key = await crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt,
+      iterations: 100000,
+      hash: "SHA-256",
+    },
+    keyMaterial,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt"]
+  );
+
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const encryptedContent = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    key,
+    encoder.encode(data)
+  );
+
+  const result = new Uint8Array(iv.length + encryptedContent.byteLength);
+  result.set(iv);
+  result.set(new Uint8Array(encryptedContent), iv.length);
+
+  return btoa(String.fromCharCode(...result));
 };
 
 export const decryptWithFingerprint = async (
   encryptedData: string
 ): Promise<string> => {
-  const encryptionKey = await generateBrowserFingerprint();
-  const bytes = CryptoJS.AES.decrypt(encryptedData, encryptionKey);
-  const decryptedText = bytes.toString(CryptoJS.enc.Utf8);
-  if (!decryptedText)
-    console.error("Decryption failed. Possible fingerprint mismatch.");
-  return decryptedText;
+  try {
+    const encryptionKey = await generateBrowserFingerprint();
+    const encoder = new TextEncoder();
+    const salt = encoder.encode("static-salt");
+
+    const binaryString = atob(encryptedData);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    const iv = bytes.slice(0, 12);
+    const encryptedContent = bytes.slice(12);
+
+    const keyMaterial = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode(encryptionKey),
+      { name: "PBKDF2" },
+      false,
+      ["deriveKey"]
+    );
+
+    const key = await crypto.subtle.deriveKey(
+      {
+        name: "PBKDF2",
+        salt,
+        iterations: 100000,
+        hash: "SHA-256",
+      },
+      keyMaterial,
+      { name: "AES-GCM", length: 256 },
+      false,
+      ["decrypt"]
+    );
+
+    const decryptedContent = await crypto.subtle.decrypt(
+      { name: "AES-GCM", iv },
+      key,
+      encryptedContent
+    );
+
+    return new TextDecoder().decode(decryptedContent);
+  } catch (error) {
+    console.error("Decryption failed. Possible fingerprint mismatch:", error);
+    return "";
+  }
 };
