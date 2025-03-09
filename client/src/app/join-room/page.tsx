@@ -22,20 +22,33 @@ export default function JoinRoomPage() {
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
-      .toUpperCase() // Convert to uppercase
-      .replace(/[^A-Z0-9]/g, "") // Remove non-alphanumeric characters
-      .slice(0, 8); // Limit to 8 characters
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "")
+      .slice(0, 8);
     setCode(value);
   };
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!code.trim() || code.length !== 8) {
+    if (code.length !== 8) {
       toast.error("Invalid room code!");
       return;
     }
 
-    router.push(`/chat/${code}`);
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/rooms/${code}`);
+      if (!response.ok) throw new Error("Failed to check room");
+      const { exists } = await response.json();
+
+      if (!exists) {
+        toast.error("Room does not exist or has expired.");
+        return;
+      }
+
+      router.push(`/chat/${code}`);
+    } catch (error) {
+      toast.error("Failed to verify room. Try again.");
+    }
   };
 
   return (

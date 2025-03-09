@@ -21,12 +21,31 @@ export default function CreateRoomPage() {
   const [copying, setCopying] = useState(false);
 
   useEffect(() => {
-    const characters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Excludes ambiguous characters
+    const characters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     let result = "";
-    for (let i = 0; i < 8; i++) { // Increased length to 8 characters
+    for (let i = 0; i < 8; i++) {
       result += characters.charAt(Math.floor(Math.random() * characters.length));
     }
     setRoomCode(result);
+
+    // Notify server about the new room
+    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/rooms`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ roomId: result }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to register room");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        console.log("Room registered:", data);
+      })
+      .catch((error) => {
+        console.error("Failed to register room:", error);
+      });
   }, []);
 
   const handleCopy = async () => {
