@@ -46,7 +46,7 @@ export default function JoinRoomPage() {
       }
 
       router.push(`/chat/${code}`);
-    } catch (error) {
+    } catch {
       toast.error("Failed to verify room. Try again.");
     }
   };
