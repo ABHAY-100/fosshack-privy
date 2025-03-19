@@ -2,6 +2,6 @@ const express = require('express')
 
 const router = express.Router()
 router.post('/post-route', (req, res) => {
-    res.status(200).send({ message: "Success" });
+    res.send({ message: "Server Alive!" });
 });
 module.exports={router}
