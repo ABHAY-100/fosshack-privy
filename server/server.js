@@ -60,7 +60,7 @@ const MAX_CONNECTIONS_PER_IP = 8;
 
 const io = new Server(httpServer, {
   cors: {
-    origin: "https://privy.abhayyy.tech",
+    origin: ["https://privy.abhayyy.tech", "https://console.cron-job.org"],
     methods: ["GET", "POST"],
   },
   connectionStateRecovery: {
