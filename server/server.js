@@ -60,15 +60,6 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path}`, {
-    body: req.body,
-    headers: req.headers,
-    query: req.query,
-  });
-  next();
-});
-
 const apiLimiter = rateLimit({
   windowMs: ROOM_EXPIRY_TIME,
   max: 10,
