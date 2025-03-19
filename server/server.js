@@ -5,128 +5,176 @@ const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 
-const app = express();
+const MAX_CONNECTIONS_PER_IP = 8;
+const ROOM_EXPIRY_TIME = 15 * 60 * 1000;
+const CLEANUP_INTERVAL = 60 * 1000;
 
+const users = new Map(); // socket.id -> { publicKey, roomId }
+const rooms = new Map(); // roomId -> Set of socket IDs
+const pendingRooms = new Map(); // roomId -> { createdAt: timestamp }
+const ipConnectionCount = new Map();
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      "https://privy.abhayyy.tech",
+      "http://localhost:3000",
+      "https://cron-job.org",
+    ];
+
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    const isAllowed = allowedOrigins.some((allowed) => {
+      if (allowed instanceof RegExp) {
+        return allowed.test(origin);
+      }
+      return allowed === origin;
+    });
+
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(new Error("CORS not allowed"), false);
+    }
+  },
+  methods: ["GET", "POST"],
+  credentials: true,
+  maxAge: 86400,
+  allowedHeaders: ["Content-Type", "Authorization", "User-Agent"],
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
+};
+
+const app = express();
 app.set("trust proxy", 1);
-app.use(helmet());
-app.use(cors());
-app.use(express.json()); // Add this to parse JSON request bodies
+
+app.use(cors(corsOptions));
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginOpenerPolicy: { policy: "unsafe-none" },
+  })
+);
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path}`, {
+    body: req.body,
+    headers: req.headers,
+    query: req.query,
+  });
+  next();
+});
 
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  windowMs: ROOM_EXPIRY_TIME,
+  max: 10,
   standardHeaders: true,
   legacyHeaders: false,
 });
 
 app.use("/", apiLimiter);
 
-// Track pending rooms (created but not yet joined)
-const pendingRooms = new Map(); // roomId -> { createdAt: timestamp }
+app.post("/is-alive", (req, res) => {
+  const userAgent = req.headers["user-agent"];
+  if (userAgent && userAgent.includes("cron-job.org")) {
+    return res.status(200).send({ message: "Server Alive!" });
+  }
+  res.send({ message: "Server Alive!" });
+});
 
-// Endpoint to register a new room
 app.post("/api/rooms", (req, res) => {
   const { roomId } = req.body;
   if (!roomId || roomId.length !== 8) {
     return res.status(400).json({ error: "Invalid room ID" });
   }
-
   pendingRooms.set(roomId, { createdAt: Date.now() });
   res.json({ success: true });
 });
 
-// Endpoint to check if a room exists
 app.get("/api/rooms/:roomId", (req, res) => {
   const roomId = req.params.roomId;
   const exists = pendingRooms.has(roomId) || rooms.has(roomId);
   res.json({ exists });
 });
 
-// Cleanup stale pending rooms (e.g., rooms created but never joined)
-setInterval(() => {
-  const now = Date.now();
-  pendingRooms.forEach((value, key) => {
-    if (now - value.createdAt > 15 * 60 * 1000) {
-      // 15-minute expiration
-      pendingRooms.delete(key);
-    }
-  });
-}, 60 * 1000); // Run every minute
+app.use((err, req, res, next) => {
+  if (err.message === "CORS not allowed") {
+    return res.status(403).json({
+      error: "Not allowed by CORS",
+      origin: req.headers.origin,
+    });
+  }
+  next(err);
+});
 
 const httpServer = createServer(app);
 
-const ipConnectionCount = new Map();
-const MAX_CONNECTIONS_PER_IP = 8;
-
 const io = new Server(httpServer, {
-  cors: {
-    origin: ["https://privy.abhayyy.tech", "https://console.cron-job.org"],
-    methods: ["GET", "POST"],
-  },
+  cors: corsOptions,
   connectionStateRecovery: {
     maxDisconnectionDuration: 2 * 60 * 1000,
     skipMiddlewares: true,
   },
-  maxHttpBufferSize: 32 * 1024, // 10 KB
+  maxHttpBufferSize: 32 * 1024,
   pingInterval: 10000,
   pingTimeout: 10000,
 });
 
 io.use((socket, next) => {
-  const clientIp = socket.handshake.headers["x-forwarded-for"] || socket.handshake.address;
+  const clientIp =
+    socket.handshake.headers["x-forwarded-for"] || socket.handshake.address;
   const connectionCount = ipConnectionCount.get(clientIp) || 0;
 
   if (connectionCount >= MAX_CONNECTIONS_PER_IP) {
-    console.warn(`IP ${clientIp} exceeded connection limit`);
     return next(new Error("Connection limit exceeded"));
   }
 
   ipConnectionCount.set(clientIp, connectionCount + 1);
-
   socket.on("disconnect", () => {
     ipConnectionCount.set(clientIp, (ipConnectionCount.get(clientIp) || 1) - 1);
   });
-
   next();
 });
 
-const users = new Map(); // socket.id -> { publicKey, roomId }
-const rooms = new Map(); // roomId -> Set of socket IDs
+function handleDisconnect(socketId) {
+  const userData = users.get(socketId);
+  if (!userData) return;
+
+  if (rooms.has(userData.roomId)) {
+    const room = rooms.get(userData.roomId);
+    room.delete(socketId);
+
+    if (room.size === 0) {
+      rooms.delete(userData.roomId);
+    } else {
+      io.to(userData.roomId).emit("peer disconnected", {
+        peerKey: userData.publicKey,
+      });
+    }
+  }
+  users.delete(socketId);
+}
 
 io.on("connection", (socket) => {
   socket.on("register", (data) => {
     try {
-      if (!data || typeof data !== "object") {
-        throw new Error("Invalid registration format");
+      if (!data?.publicKey?.trim() || !data?.roomId?.trim()) {
+        throw new Error("Invalid registration data");
       }
 
       const { publicKey, roomId } = data;
-
-      if (!publicKey?.trim() || !roomId?.trim()) {
-        throw new Error(`Missing parameters. Received: publicKey=${publicKey}, roomId=${roomId}`);
-      }
-
-      if (typeof publicKey !== "string" || typeof roomId !== "string") {
-        throw new Error("Parameters must be strings");
-      }
-
-      if (users.has(socket.id)) {
-        handleDisconnect(socket.id);
-      }
+      if (users.has(socket.id)) handleDisconnect(socket.id);
 
       const room = io.sockets.adapter.rooms.get(roomId);
-      const roomSize = room ? room.size : 0;
-
-      if (roomSize >= 2) {
-        socket.emit("room_full");
-        return;
+      if (room?.size >= 2) {
+        return socket.emit("room_full");
       }
 
-      // Remove from pending rooms (if present)
-      if (pendingRooms.has(roomId)) {
-        pendingRooms.delete(roomId);
-      }
-
+      pendingRooms.delete(roomId);
       users.set(socket.id, { publicKey, roomId });
       socket.join(roomId);
 
@@ -142,17 +190,14 @@ io.on("connection", (socket) => {
           .map((id) => users.get(id).publicKey);
 
         socket.emit("peers list", { peers: otherMembers });
-        socket.to(roomId).emit("peer connected", {
-          peerKey: publicKey,
-          socketId: socket.id,
-        });
+        socket
+          .to(roomId)
+          .emit("peer connected", { peerKey: publicKey, socketId: socket.id });
       }
     } catch (error) {
-      console.error("Registration error:", error.message);
       socket.emit("error", {
         code: "INVALID_REGISTRATION",
         message: error.message,
-        received: data,
       });
     }
   });
@@ -176,7 +221,6 @@ io.on("connection", (socket) => {
         ack({ status: "delivered", messageId });
       }
     } catch (error) {
-      console.error("Message error:", error.message);
       socket.emit("error", { message: error.message });
     }
   });
@@ -184,30 +228,13 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => handleDisconnect(socket.id));
 });
 
-function handleDisconnect(socketId) {
-  try {
-    const userData = users.get(socketId);
-    if (!userData) return;
-
-    if (rooms.has(userData.roomId)) {
-      const room = rooms.get(userData.roomId);
-      room.delete(socketId);
-
-      if (room.size === 0) {
-        rooms.delete(userData.roomId);
-      } else {
-        io.to(userData.roomId).emit("peer disconnected", {
-          peerKey: userData.publicKey,
-        });
-      }
+setInterval(() => {
+  const now = Date.now();
+  pendingRooms.forEach((value, key) => {
+    if (now - value.createdAt > ROOM_EXPIRY_TIME) {
+      pendingRooms.delete(key);
     }
+  });
+}, CLEANUP_INTERVAL);
 
-    users.delete(socketId);
-  } catch (error) {
-    console.error("Disconnect error:", error.message);
-  }
-}
-
-httpServer.listen(5000, () => {
-  console.log("Server running on port 5000");
-});
+httpServer.listen(5000, () => console.log("Server running on port 5000"));
