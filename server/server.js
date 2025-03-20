@@ -1,3 +1,4 @@
+// Import required dependencies
 const express = require("express");
 const { createServer } = require("http");
 const { Server } = require("socket.io");
@@ -5,27 +6,34 @@ const cors = require("cors");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
 
-const MAX_CONNECTIONS_PER_IP = 8;
-const ROOM_EXPIRY_TIME = 15 * 60 * 1000;
-const CLEANUP_INTERVAL = 60 * 1000;
+// Configuration constants
+const MAX_CONNECTIONS_PER_IP = 8;        // Maximum allowed connections per IP
+const ROOM_EXPIRY_TIME = 15 * 60 * 1000; // Room expiry time in milliseconds (15 minutes)
+const CLEANUP_INTERVAL = 60 * 1000;       // Cleanup interval in milliseconds (1 minute)
 
-const users = new Map(); // socket.id -> { publicKey, roomId }
-const rooms = new Map(); // roomId -> Set of socket IDs
-const pendingRooms = new Map(); // roomId -> { createdAt: timestamp }
-const ipConnectionCount = new Map();
+// In-memory data structures for tracking users and rooms
+const users = new Map();         // Maps socket.id to user data {publicKey, roomId}
+const rooms = new Map();         // Maps roomId to Set of connected socket IDs
+const pendingRooms = new Map();  // Maps roomId to room creation timestamp
+const ipConnectionCount = new Map(); // Maps IP addresses to connection count
 
+// CORS configuration
 const corsOptions = {
+  // Whitelist of allowed origins
   origin: function (origin, callback) {
     const allowedOrigins = [
       "https://privy.abhayyy.tech",
-      "http://localhost:3000",
+      /localhost:(\d+)/,
+      /127\.0\.0\.1:\d+/,
       "https://cron-job.org",
     ];
 
+    // Allow requests with no origin (mobile apps, tools)
     if (!origin) {
       return callback(null, true);
     }
 
+    // Check if origin matches allowed patterns
     const isAllowed = allowedOrigins.some((allowed) => {
       if (allowed instanceof RegExp) {
         return allowed.test(origin);
@@ -47,9 +55,11 @@ const corsOptions = {
   optionsSuccessStatus: 204,
 };
 
+// Initialize Express application
 const app = express();
 app.set("trust proxy", 1);
 
+// Apply middleware
 app.use(cors(corsOptions));
 app.use(
   helmet({
@@ -60,6 +70,7 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Rate limiting configuration
 const apiLimiter = rateLimit({
   windowMs: ROOM_EXPIRY_TIME,
   max: 10,
@@ -69,6 +80,7 @@ const apiLimiter = rateLimit({
 
 app.use("/", apiLimiter);
 
+// Health check endpoint
 app.post("/is-alive", (req, res) => {
   const userAgent = req.headers["user-agent"];
   if (userAgent && userAgent.includes("cron-job.org")) {
@@ -77,6 +89,7 @@ app.post("/is-alive", (req, res) => {
   res.send({ message: "Server Alive!" });
 });
 
+// Room creation endpoint
 app.post("/api/rooms", (req, res) => {
   const { roomId } = req.body;
   if (!roomId || roomId.length !== 8) {
@@ -86,12 +99,14 @@ app.post("/api/rooms", (req, res) => {
   res.json({ success: true });
 });
 
+// Room existence check endpoint
 app.get("/api/rooms/:roomId", (req, res) => {
   const roomId = req.params.roomId;
   const exists = pendingRooms.has(roomId) || rooms.has(roomId);
   res.json({ exists });
 });
 
+// CORS error handler
 app.use((err, req, res, next) => {
   if (err.message === "CORS not allowed") {
     return res.status(403).json({
@@ -102,8 +117,10 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
+// Initialize HTTP server
 const httpServer = createServer(app);
 
+// Initialize Socket.IO with configuration
 const io = new Server(httpServer, {
   cors: corsOptions,
   connectionStateRecovery: {
@@ -115,6 +132,7 @@ const io = new Server(httpServer, {
   pingTimeout: 10000,
 });
 
+// Socket connection limit middleware
 io.use((socket, next) => {
   const clientIp =
     socket.handshake.headers["x-forwarded-for"] || socket.handshake.address;
@@ -131,6 +149,7 @@ io.use((socket, next) => {
   next();
 });
 
+// Handle user disconnection
 function handleDisconnect(socketId) {
   const userData = users.get(socketId);
   if (!userData) return;
@@ -150,7 +169,9 @@ function handleDisconnect(socketId) {
   users.delete(socketId);
 }
 
+// Socket.IO connection handler
 io.on("connection", (socket) => {
+  // Handle user registration in a room
   socket.on("register", (data) => {
     try {
       if (!data?.publicKey?.trim() || !data?.roomId?.trim()) {
@@ -160,11 +181,13 @@ io.on("connection", (socket) => {
       const { publicKey, roomId } = data;
       if (users.has(socket.id)) handleDisconnect(socket.id);
 
+      // Check room capacity
       const room = io.sockets.adapter.rooms.get(roomId);
       if (room?.size >= 2) {
         return socket.emit("room_full");
       }
 
+      // Register user in room
       pendingRooms.delete(roomId);
       users.set(socket.id, { publicKey, roomId });
       socket.join(roomId);
@@ -175,6 +198,7 @@ io.on("connection", (socket) => {
         rooms.get(roomId).add(socket.id);
       }
 
+      // Notify peers if room has multiple users
       if (rooms.get(roomId).size > 1) {
         const otherMembers = Array.from(rooms.get(roomId))
           .filter((id) => id !== socket.id)
@@ -193,6 +217,7 @@ io.on("connection", (socket) => {
     }
   });
 
+  // Handle room messages
   socket.on("room message", (data, ack) => {
     try {
       const userData = users.get(socket.id);
@@ -216,9 +241,11 @@ io.on("connection", (socket) => {
     }
   });
 
+  // Handle disconnection
   socket.on("disconnect", () => handleDisconnect(socket.id));
 });
 
+// Periodic cleanup of expired rooms
 setInterval(() => {
   const now = Date.now();
   pendingRooms.forEach((value, key) => {
@@ -228,4 +255,5 @@ setInterval(() => {
   });
 }, CLEANUP_INTERVAL);
 
+// Start server
 httpServer.listen(5000, () => console.log("Server running on port 5000"));
