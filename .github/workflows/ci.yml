@@ -1,0 +1,38 @@
+name: Pre-Merge Check
+
+on:
+  pull_request:
+    branches: [ "*" ]
+  push:
+    branches: [ "*" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Server
+      - name: Install server deps
+        working-directory: ./server
+        run: npm install
+
+      - name: Build server
+        working-directory: ./server
+        run: npm run build
+
+      # Client
+      - name: Install client deps
+        working-directory: ./client
+        run: npm install
+
+      - name: Build client
+        working-directory: ./client
+        run: npm run build
