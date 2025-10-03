@@ -2,12 +2,12 @@ name: Pre-Merge Check
 
 on:
   pull_request:
-    branches: [ "*" ]
+    branches: ["*"]
   push:
-    branches: [ "*" ]
+    branches: ["*"]
 
 jobs:
-  build:
+   check:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,9 +24,25 @@ jobs:
         working-directory: ./server
         run: npm install
 
-      - name: Build server
+      - name: Test server startup
         working-directory: ./server
-        run: npm run build
+        run: |
+          # Start server in background
+          npm start &
+          SERVER_PID=$!
+
+          # Wait for server to start
+          sleep 5
+
+          # Check if server is still running
+          if kill -0 $SERVER_PID 2>/dev/null; then
+            echo "Server started successfully"
+            kill $SERVER_PID
+            exit 0
+          else
+            echo "Server failed to start"
+            exit 1
+          fi
 
       # Client
       - name: Install client deps
