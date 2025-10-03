@@ -52,7 +52,6 @@ export const importPublicKey = async (publicKeyString: string): Promise<CryptoKe
   }
 }
 
-// Encrypt AES key with RSA public key
 const encryptAESKey = async (aesKeyString: string, publicKey: CryptoKey): Promise<string> => {
   try {
     const encoder = new TextEncoder()
@@ -65,7 +64,6 @@ const encryptAESKey = async (aesKeyString: string, publicKey: CryptoKey): Promis
   }
 }
 
-// Decrypt AES key with RSA private key
 const decryptAESKey = async (encryptedAESKey: string, privateKey: CryptoKey): Promise<string> => {
   try {
     const data = Uint8Array.from(atob(encryptedAESKey), (c) => c.charCodeAt(0))
@@ -78,7 +76,6 @@ const decryptAESKey = async (encryptedAESKey: string, privateKey: CryptoKey): Pr
   }
 }
 
-// Split message into chunks if needed
 const splitIntoChunks = (message: string): string[] => {
   const chunks = []
   for (let i = 0; i < message.length; i += CHUNK_SIZE) {
@@ -90,24 +87,19 @@ const splitIntoChunks = (message: string): string[] => {
 
 export const encryptMessage = async (message: string, publicKey: CryptoKey): Promise<string> => {
   try {
-    // Generate a new AES key for this message
     const aesKey = await generateAESKey()
     const aesKeyString = await exportAESKey(aesKey)
 
-    // Encrypt the message with AES
     const { encrypted: encryptedMessage, iv } = await encryptWithAES(message, aesKey)
 
-    // Encrypt the AES key with the recipient's public RSA key
     const encryptedAESKey = await encryptAESKey(aesKeyString, publicKey)
 
-    // Format: encryptedAESKey|iv|encryptedMessage
     const payload = JSON.stringify({
       key: encryptedAESKey,
       iv: iv,
       data: encryptedMessage,
     })
 
-    // If the payload is too large, split it into chunks
     const chunks = splitIntoChunks(payload)
     return chunks.join(CHUNK_SEPARATOR)
   } catch (error) {
@@ -118,17 +110,13 @@ export const encryptMessage = async (message: string, publicKey: CryptoKey): Pro
 
 export const decryptMessage = async (encryptedMessage: string, privateKey: CryptoKey): Promise<string> => {
   try {
-    // Join chunks if message was split
     const fullPayload = encryptedMessage.split(CHUNK_SEPARATOR).join("")
 
-    // Parse the payload
     const { key: encryptedAESKey, iv, data: encryptedData } = JSON.parse(fullPayload)
 
-    // Decrypt the AES key with the private RSA key
     const aesKeyString = await decryptAESKey(encryptedAESKey, privateKey)
     const aesKey = await importAESKey(aesKeyString)
 
-    // Decrypt the message with the AES key
     return await decryptWithAES(encryptedData, iv, aesKey)
   } catch (error) {
     console.error("Message decryption error:", error)
